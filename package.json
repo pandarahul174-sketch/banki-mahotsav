@@ -1,0 +1,16 @@
+{
+  "name": "banki-mahotsav",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Banki Mahotsav — citizen app, admin app, and API",
+  "scripts": {
+    "dev": "concurrently -n api,citizen,admin -c magenta,cyan,yellow \"npm run backend\" \"npm run citizen\" \"npm run admin\"",
+    "backend": "npm run dev --prefix mahotsav_backend",
+    "citizen": "npm run dev --prefix mahotsav_citizen",
+    "admin": "npm run dev --prefix mahotsav_admin",
+    "build": "npm run build --prefix mahotsav_citizen && npm run build --prefix mahotsav_admin"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

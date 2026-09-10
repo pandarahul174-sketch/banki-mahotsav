@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="720" viewBox="0 0 1600 720">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#7b1230"/>
+      <stop offset="55%" stop-color="#c62850"/>
+      <stop offset="100%" stop-color="#f6c445"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="720" fill="url(#sky)"/>
+  <circle cx="800" cy="430" r="210" fill="#f8e08e" opacity="0.35"/>
+  <rect x="560" y="280" width="480" height="320" rx="18" fill="#6d1024"/>
+  <polygon points="800,150 520,300 1080,300" fill="#f6c445"/>
+  <rect x="740" y="430" width="120" height="170" fill="#fbf4ea"/>
+  <circle cx="800" cy="390" r="48" fill="#f6c445"/>
+  <text x="800" y="660" text-anchor="middle" fill="#fff8e7" font-family="Georgia, serif" font-size="42">Jai Maa Charchika - Banki Mahotsav</text>
+</svg>

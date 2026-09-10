@@ -1,0 +1,289 @@
+{
+  "settings": {
+    "siteName": "Banki Mahotsav jj",
+    "tagline": "Maa Charchika · Banki, Odisha",
+    "priestName": "Banki Mahotsav Committee",
+    "priestFather": "Charchika Temple Seva",
+    "phone": "+91 9876543210",
+    "email": "info@bankimahotsav.com",
+    "whatsapp": "+91 9876543210",
+    "address": "Charchika Temple Road, Banki, Cuttack, Odisha 754008",
+    "welcomeTitle": "Welcome to Banki Mahotsav",
+    "welcomeSubtitle": "Jai Maa Charchika",
+    "heroImage": "/hero.svg",
+    "about": "Banki Mahotsav is the cultural and spiritual gathering of Banki, Odisha — celebrating Maa Charchika, Odia folk arts, literature, and community seva. Book pujas, send offerings, and support the festival from anywhere.",
+    "disclaimer": []
+  },
+  "users": [
+    {
+      "id": "admin-1",
+      "name": "Administrator",
+      "email": "admin@bankimahotsav.com",
+      "password": "$2a$10$GL538s55R.Dhj.Ad5PPL5OS1ZAomEvY0pXRhXi1kDkEFLhYg9Aw/W",
+      "role": "admin",
+      "createdAt": "2026-09-10T15:46:04.470Z"
+    },
+    {
+      "id": "user-1",
+      "name": "Demo Devotee",
+      "email": "devotee@bankimahotsav.com",
+      "password": "$2a$10$QZEnnEgSpkKPDc2fCXCdJ.EyFxuMIgmsdrqo4vgi7RW862kCY7eSa",
+      "role": "devotee",
+      "createdAt": "2026-09-10T15:46:04.473Z"
+    }
+  ],
+  "history": [
+    {
+      "id": "7fef1fb4-b3bc-4033-86b2-a48c54831844",
+      "slug": "maa-charchika",
+      "title": "Maa Charchika",
+      "subtitle": "Ashta-bhuja Chamunda of Banki",
+      "excerpt": "Maa Charchika, an eight-armed form of Chamunda, is the presiding goddess of Banki. She is seated upon Ruchika Parvata on the banks of the Renuka river.",
+      "body": "Maa Charchika is among the oldest Shakti peethas of Odisha. The goddess is depicted with eight arms, a garland of skulls, and fierce protective grace. Devotees believe she grants courage, protection, and fulfilment of sincere wishes. Daily puja, special Ashtami rituals, and festival anjali are offered throughout the year, with Banki Mahotsav bringing the whole region together in her honour.",
+      "image": "/temple.svg",
+      "order": 1
+    },
+    {
+      "id": "310bead4-a871-430b-9c67-400be50687a3",
+      "slug": "charchika-temple",
+      "title": "Charchika Temple",
+      "subtitle": "Ruchika Parvata · Renuka river",
+      "excerpt": "The temple stands on a small hillock above the Renuka river. Its shrine, steps, and surrounding fairs have shaped Banki's identity for generations.",
+      "body": "Charchika Temple sits on Ruchika Parvata in Banki, Cuttack district. Pilgrims climb to the sanctum for darshan of the eight-armed goddess. The temple complex becomes the spiritual heart of Banki Mahotsav, when cultural programmes, prasad distribution, and night-long kirtan fill the town. Architecture, folk memory, and living ritual together make this one of Odisha's treasured Shakti shrines.",
+      "image": "/temple.svg",
+      "order": 2
+    },
+    {
+      "id": "2b289cac-0156-4c90-938c-fe59a8909459",
+      "slug": "banki-mahotsav",
+      "title": "Banki Mahotsav",
+      "subtitle": "Literature, folk arts & social harmony",
+      "excerpt": "Banki Mahotsav is more than a fair — it is a living festival of Odia literature, folk performance, Charchika Samman, and community pride.",
+      "body": "Held in Banki, Odisha, the Mahotsav brings together artistes, writers, devotees, and families. Silver-jubilee editions have drawn state leadership and highlighted Banki's cultural depth. Stages host Odissi, pala, sankirtan, and local crafts. The festival also supports social cohesion and local enterprise, while keeping Maa Charchika at the centre of public life.",
+      "image": "/festival.svg",
+      "order": 3
+    }
+  ],
+  "pujas": [
+    {
+      "id": "59a35d30-507a-4955-917c-395cacfeb478",
+      "slug": "charchika-special-puja",
+      "title": "Charchika Special Puja",
+      "category": "All Type of Puja",
+      "price": 2100,
+      "duration": "45 mins",
+      "featured": true,
+      "description": "Complete special puja at Charchika shrine with sankalp in the devotee's name, pushpanjali, and prasad.",
+      "image": "/temple.svg"
+    },
+    {
+      "id": "2edc5d8f-d482-4c91-b5d9-b4aafc635866",
+      "slug": "anjali-puja",
+      "title": "Anjali Puja",
+      "category": "Anjali Puja",
+      "price": 501,
+      "duration": "20 mins",
+      "featured": true,
+      "description": "Name-sankalp anjali offered to Maa Charchika with flowers, sindoor, and lamp.",
+      "image": "/temple.svg"
+    },
+    {
+      "id": "b0adb477-b179-43de-a70f-b5d5623bf226",
+      "slug": "hawan-puja",
+      "title": "Hawan Puja",
+      "category": "Hawan Puja",
+      "price": 5100,
+      "duration": "90 mins",
+      "featured": true,
+      "description": "Hawan with Charchika mantras for health, protection, and family welfare.",
+      "image": "/temple.svg"
+    },
+    {
+      "id": "3e873e61-a083-48ff-837d-c3767a662ea1",
+      "slug": "monthly-puja",
+      "title": "Monthly Puja Seva",
+      "category": "Monthly Puja",
+      "price": 1100,
+      "duration": "Monthly",
+      "featured": false,
+      "description": "Recurring monthly puja on a chosen tithi, with photo/video confirmation when possible.",
+      "image": "/temple.svg"
+    },
+    {
+      "id": "34b93e0d-31ac-4f70-9c24-94d8cc0125fd",
+      "slug": "mahotsav-event-puja",
+      "title": "Mahotsav Event Puja",
+      "category": "Events Puja",
+      "price": 2500,
+      "duration": "Festival day",
+      "featured": true,
+      "description": "Special booking during Banki Mahotsav cultural days with event-day darshan seva.",
+      "image": "/temple.svg"
+    }
+  ],
+  "offerings": [
+    {
+      "id": "a452879c-0ca5-404d-b766-7349597ac8a6",
+      "slug": "saree-offering",
+      "title": "Saree Offering",
+      "price": 1500,
+      "description": "Offer a saree to Maa Charchika on your behalf during puja.",
+      "image": "/prasad.svg"
+    },
+    {
+      "id": "7093f645-39c0-411e-a8d4-14a8a04956f4",
+      "slug": "bhog-prasad",
+      "title": "Bhog & Prasad",
+      "price": 751,
+      "description": "Temple-style bhog offering with shareable prasad packing when requested.",
+      "image": "/prasad.svg"
+    },
+    {
+      "id": "069cdba1-4b86-4536-88d8-e9f16c1e8159",
+      "slug": "deepa-seva",
+      "title": "Deepa Seva",
+      "price": 251,
+      "description": "Evening lamp seva in the devotee's name.",
+      "image": "/prasad.svg"
+    }
+  ],
+  "products": [
+    {
+      "id": "342ca333-7871-4cdf-a016-866c608e4aa8",
+      "slug": "charchika-tabij-protection",
+      "title": "Charchika Tabij for Protection",
+      "price": 1299,
+      "category": "Tabij",
+      "consecrated": true,
+      "stock": 40,
+      "description": "Consecrated protection tabij energised during Charchika puja.",
+      "image": "/prasad.svg"
+    },
+    {
+      "id": "99889b36-efc3-4be6-b9ba-a30dda8072ea",
+      "slug": "charchika-tabij-study",
+      "title": "Charchika Tabij for Study",
+      "price": 1199,
+      "category": "Tabij",
+      "consecrated": true,
+      "stock": 35,
+      "description": "For students and competitive exams, consecrated on Ashtami.",
+      "image": "/locket.svg"
+    },
+    {
+      "id": "5b8626ee-842f-4980-ab56-e13de8c3f802",
+      "slug": "charchika-yantra",
+      "title": "Charchika Yantra",
+      "price": 899,
+      "category": "Yantra",
+      "consecrated": true,
+      "stock": 50,
+      "description": "Copper yantra consecrated at the shrine.",
+      "image": "/prasad.svg"
+    },
+    {
+      "id": "f0f943c8-f71c-4d70-9b27-ba8a5cbcd4b0",
+      "slug": "maa-locket",
+      "title": "Maa Charchika Locket",
+      "price": 1499,
+      "category": "Locket",
+      "consecrated": true,
+      "stock": 25,
+      "description": "Pendant locket for daily wear after puja.",
+      "image": "/locket.svg"
+    },
+    {
+      "id": "b896b99c-557a-4146-8c5c-131da7431a20",
+      "slug": "festival-prasad-box",
+      "title": "Mahotsav Prasad Box",
+      "price": 499,
+      "category": "Prasad",
+      "consecrated": false,
+      "stock": 80,
+      "description": "Festival prasad assortment packed for devotees at home.",
+      "image": "/prasad.svg"
+    },
+    {
+      "id": "688d6475-56bf-4b7e-b79a-a1878248c966",
+      "slug": "silver-locket",
+      "title": "Silver Charchika Locket",
+      "price": 2499,
+      "category": "Locket",
+      "consecrated": true,
+      "stock": 15,
+      "description": "Silver locket consecrated during special hawan.",
+      "image": "/locket.svg"
+    }
+  ],
+  "events": [
+    {
+      "id": "cdfc3ed6-7f8b-49f1-91ab-7df56617452c",
+      "slug": "banki-mahotsav-2026",
+      "title": "Banki Mahotsav 2026",
+      "startsAt": "2026-01-10",
+      "endsAt": "2026-01-14",
+      "description": "Join the next Banki Mahotsav — cultural nights, Charchika puja, crafts, and community gatherings. Send puja if you cannot attend in person.",
+      "cta": "Send Puja",
+      "featured": true
+    }
+  ],
+  "reviews": [
+    {
+      "id": "163e519f-cae4-417a-bcb2-2469dab913d9",
+      "name": "Smita Rath",
+      "rating": 5,
+      "text": "Booked Anjali Puja during Mahotsav. Confirmation and prasad details were shared the same evening. Jai Maa Charchika.",
+      "approved": true,
+      "reactions": {
+        "like": 4,
+        "love": 2,
+        "clap": 1
+      },
+      "createdAt": "2026-09-10T15:46:04.480Z"
+    },
+    {
+      "id": "6715ea1d-4abe-4021-b511-82d16f787a50",
+      "name": "Debasish Mohanty",
+      "rating": 5,
+      "text": "The store tabij arrived consecrated as promised. The festival pages helped our family plan the visit.",
+      "approved": true,
+      "reactions": {
+        "like": 2,
+        "love": 1,
+        "clap": 0
+      },
+      "createdAt": "2026-09-10T15:46:04.480Z"
+    },
+    {
+      "id": "1d6b1635-5a02-4190-b017-549f334abb1c",
+      "name": "Anita Das",
+      "rating": 4,
+      "text": "Smooth booking for monthly puja. Would love more photos of the cultural stage next year.",
+      "approved": true,
+      "reactions": {
+        "like": 1,
+        "love": 0,
+        "clap": 1
+      },
+      "createdAt": "2026-09-10T15:46:04.480Z"
+    }
+  ],
+  "bookings": [
+    {
+      "id": "1e6588fd-f917-40a5-aa57-5775407ba012",
+      "name": "Test Devotee",
+      "email": "",
+      "phone": "9876543210",
+      "pujaId": "59a35d30-507a-4955-917c-395cacfeb478",
+      "pujaTitle": "Charchika Special Puja",
+      "amount": 2100,
+      "date": "",
+      "gotra": "",
+      "notes": "",
+      "status": "pending",
+      "createdAt": "2026-09-10T15:58:51.786Z"
+    }
+  ],
+  "orders": [],
+  "messages": []
+}

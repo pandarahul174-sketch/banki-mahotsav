@@ -1,0 +1,7 @@
+node_modules
+mahotsav_citizen/dist
+mahotsav_admin/dist
+mahotsav_backend/uploads
+.DS_Store
+*.log
+.env
