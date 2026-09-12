@@ -1,7 +1,12 @@
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useParams } from "react-router-dom";
 import { Layout } from "./Layout";
 import { useApp } from "./store";
-import { About, Auth, Cart, Contact, FestivalDetail, Festivals, Gallery, HistoryDetail, Home, NotFound, Offerings, Policies, ProductDetail, PujaDetail, Pujas, Store } from "./pages";
+import { About, Contact, BookDetail, Books, EventDetail, Events, Gallery, Home, NotFound } from "./pages";
+
+function FestivalToEvent() {
+  const { slug } = useParams();
+  return <Navigate to={`/events/${slug}`} replace />;
+}
 
 export default function App() {
   const { loading } = useApp();
@@ -10,20 +15,15 @@ export default function App() {
     <Routes>
       <Route element={<Layout />}>
         <Route path="/" element={<Home />} />
-        <Route path="/history/:slug" element={<HistoryDetail />} />
-        <Route path="/pujas" element={<Pujas />} />
-        <Route path="/pujas/:slug" element={<PujaDetail />} />
-        <Route path="/festivals" element={<Festivals />} />
-        <Route path="/festivals/:slug" element={<FestivalDetail />} />
+        <Route path="/events" element={<Events />} />
+        <Route path="/events/:slug" element={<EventDetail />} />
+        <Route path="/festivals" element={<Navigate to="/events" replace />} />
+        <Route path="/festivals/:slug" element={<FestivalToEvent />} />
+        <Route path="/books" element={<Books />} />
+        <Route path="/books/:slug" element={<BookDetail />} />
         <Route path="/gallery" element={<Gallery />} />
-        <Route path="/store" element={<Store />} />
-        <Route path="/store/:slug" element={<ProductDetail />} />
-        <Route path="/offerings" element={<Offerings />} />
-        <Route path="/cart" element={<Cart />} />
-        <Route path="/login" element={<Auth />} />
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
-        <Route path="/policies" element={<Policies />} />
         <Route path="*" element={<NotFound />} />
       </Route>
     </Routes>

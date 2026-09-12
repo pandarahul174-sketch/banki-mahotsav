@@ -1,35 +1,87 @@
-import { NavLink, Navigate, Route, Routes, useNavigate } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { NavLink, Navigate, Outlet, useLocation, useNavigate } from "react-router-dom";
+import { useEffect, useRef, useState } from "react";
 import { api, setToken } from "./api";
-import { rupee, useApp } from "./store";
+import { useApp } from "./store";
+import { swalConfirm, swalError, swalImage, swalPrompt, swalSuccess, swalToast } from "./swal";
 
 function adminApi(path, opts) {
   return api(path, opts);
+}
+
+function prettyLabel(key) {
+  return key
+    .replace(/([A-Z])/g, " $1")
+    .replace(/^./, (s) => s.toUpperCase());
+}
+
+const RICH_FIELDS = new Set(["body", "excerpt"]);
+
+function RichEditor({ value, onChange }) {
+  const ref = useRef(null);
+  useEffect(() => {
+    if (ref.current) ref.current.innerHTML = value || "";
+  }, []);
+
+  function run(command, arg) {
+    ref.current?.focus();
+    document.execCommand(command, false, arg);
+    onChange(ref.current?.innerHTML || "");
+  }
+
+  async function link() {
+    const url = await swalPrompt("Link URL", "https://");
+    if (url) run("createLink", url);
+  }
+
+  return (
+    <div className="rich">
+      <div className="rich-bar">
+        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => run("bold")}><b>B</b></button>
+        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => run("italic")}><i>I</i></button>
+        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => run("underline")}><u>U</u></button>
+        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => run("formatBlock", "h2")}>H2</button>
+        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => run("formatBlock", "h3")}>H3</button>
+        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => run("insertUnorderedList")}>• List</button>
+        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => run("insertOrderedList")}>1. List</button>
+        <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={link}>Link</button>
+      </div>
+      <div
+        ref={ref}
+        className="rich-area"
+        contentEditable
+        suppressContentEditableWarning
+        onInput={(e) => onChange(e.currentTarget.innerHTML)}
+      />
+    </div>
+  );
 }
 
 export function AdminLogin() {
   const { user, setUser, authReady } = useApp();
   const nav = useNavigate();
   const [form, setForm] = useState({ email: "admin@bankimahotsav.com", password: "admin123" });
-  const [err, setErr] = useState("");
   if (!authReady) return <p className="page wrap">Loading…</p>;
   if (user?.role === "admin") return <Navigate to="/" replace />;
   return (
-    <div className="page wrap">
-      <h1>Admin Login</h1>
-      <form className="card" style={{ maxWidth: 420 }} onSubmit={async (e) => {
+    <div className="login-screen">
+      <form className="login-card" onSubmit={async (e) => {
         e.preventDefault();
         try {
           const data = await adminApi("/api/admin/login", { method: "POST", body: JSON.stringify(form) });
           setToken(data.token);
           setUser(data.user);
+          swalToast("Signed in");
           nav("/");
-        } catch (e2) { setErr(e2.message); }
+        } catch (e2) {
+          await swalError("Sign in failed", e2.message);
+        }
       }}>
+        <p className="login-kicker">Banki Mahotsav</p>
+        <h1>Admin console</h1>
+        <p>Sign in to manage events, books, gallery, and messages.</p>
         <div className="field"><label>Email</label><input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
         <div className="field"><label>Password</label><input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></div>
-        {err && <p className="err">{err}</p>}
-        <button className="btn-red">Enter admin panel</button>
+        <button className="btn-red">Sign in</button>
       </form>
     </div>
   );
@@ -43,61 +95,218 @@ function Guard({ children }) {
   return children;
 }
 
-function Dashboard() {
+export function Dashboard() {
+  const { user } = useApp();
   const [stats, setStats] = useState(null);
   useEffect(() => { adminApi("/api/admin/stats").then(setStats); }, []);
   if (!stats) return <p>Loading…</p>;
   const items = [
-    ["Pujas", stats.pujas],
-    ["Products", stats.products],
-    ["Bookings", stats.bookings],
-    ["Pending bookings", stats.pendingBookings],
-    ["Orders", stats.orders],
-    ["Pending orders", stats.pendingOrders],
-    ["Reviews", stats.reviews],
-    ["Messages", stats.messages],
+    ["Events", stats.events, "Published on the Events page", "/events"],
+    ["Books", stats.books, "PDFs available to download", "/books"],
+    ["Gallery", stats.gallery, "Photographs on the public site", "/gallery"],
+    ["Messages", stats.messages, "Contact form submissions", "/messages"],
   ];
   return (
     <>
-      <h1>Dashboard</h1>
+      <div className="page-head">
+        <div>
+          <h1>Dashboard</h1>
+          <p>Welcome{user?.name ? `, ${user.name}` : ""}. Overview of content on the public site.</p>
+        </div>
+      </div>
       <div className="stats">
-        {items.map(([k, v]) => <div className="stat" key={k}><span>{k}</span><b>{v}</b></div>)}
+        {items.map(([k, v, hint, to]) => (
+          <NavLink className="stat" to={to} key={k}>
+            <span>{k}</span>
+            <b>{v}</b>
+            <em>{hint}</em>
+          </NavLink>
+        ))}
       </div>
     </>
   );
 }
 
-function SettingsEditor() {
+export function SettingsEditor() {
   const [s, setS] = useState(null);
-  const [msg, setMsg] = useState("");
   useEffect(() => { adminApi("/api/admin/settings").then(setS); }, []);
   if (!s) return <p>Loading…</p>;
-  const fields = ["siteName", "tagline", "priestName", "priestFather", "phone", "email", "whatsapp", "address", "welcomeTitle", "welcomeSubtitle", "heroImage"];
+  const fields = [
+    ["siteName", "Site name"],
+    ["tagline", "Tagline"],
+    ["priestName", "Committee / priest name"],
+    ["priestFather", "Seva line"],
+    ["phone", "Phone"],
+    ["email", "Email"],
+    ["contactEmail", "Contact Us inbox"],
+    ["whatsapp", "WhatsApp"],
+    ["address", "Address"],
+    ["aboutDarshan", "Opening hours"],
+    ["welcomeTitle", "Homepage title"],
+    ["welcomeSubtitle", "Homepage subtitle"],
+  ];
   return (
     <>
-      <h1>Site settings</h1>
+      <div className="page-head">
+        <div>
+          <h1>Site settings</h1>
+          <p>These details appear in the header, footer, homepage hero, and contact page.</p>
+        </div>
+      </div>
       <form className="card" onSubmit={async (e) => {
         e.preventDefault();
-        const next = { ...s, disclaimer: String(s.disclaimerText || "").split("\n").filter(Boolean) };
-        delete next.disclaimerText;
-        await adminApi("/api/admin/settings", { method: "PUT", body: JSON.stringify(next) });
-        setMsg("Saved");
+        try {
+          const next = { ...s, disclaimer: String(s.disclaimerText || "").split("\n").filter(Boolean) };
+          delete next.disclaimerText;
+          await adminApi("/api/admin/settings", { method: "PUT", body: JSON.stringify(next) });
+          await swalSuccess("Settings saved", "The public site will show these details after a refresh.");
+        } catch (ex) {
+          await swalError("Could not save settings", ex.message);
+        }
       }}>
-        {fields.map((k) => (
-          <div className="field" key={k}><label>{k}</label><input value={s[k] || ""} onChange={(e) => setS({ ...s, [k]: e.target.value })} /></div>
-        ))}
-        <div className="field"><label>about</label><textarea rows={4} value={s.about || ""} onChange={(e) => setS({ ...s, about: e.target.value })} /></div>
-        <div className="field"><label>disclaimer (one per line)</label>
-          <textarea rows={5} value={s.disclaimerText ?? (s.disclaimer || []).join("\n")} onChange={(e) => setS({ ...s, disclaimerText: e.target.value })} />
+        <div className="settings-grid">
+          {fields.map(([k, label]) => (
+            <div className={`field${k === "address" || k === "contactEmail" ? " span-2" : ""}`} key={k}>
+              <label>{label}</label>
+              <input
+                type={k === "email" || k === "contactEmail" ? "email" : "text"}
+                value={s[k] || ""}
+                onChange={(e) => setS({ ...s, [k]: e.target.value })}
+                placeholder={k === "contactEmail" ? "Messages from Contact Us are emailed here" : undefined}
+              />
+            </div>
+          ))}
+          <div className="field">
+            <label>Site logo</label>
+            <ImageField value={s.logo || ""} onChange={(url) => setS({ ...s, logo: url })} />
+          </div>
+          <div className="field">
+            <label>Favicon</label>
+            <ImageField value={s.favicon || ""} onChange={(url) => setS({ ...s, favicon: url })} accept=".ico,.png,.svg,.webp,image/*" />
+          </div>
+          <div className="field span-2">
+            <label>Homepage hero image</label>
+            <ImageField value={s.heroImage || ""} onChange={(url) => setS({ ...s, heroImage: url })} />
+          </div>
+          <div className="field span-2">
+            <label>Disclaimer (one line per item)</label>
+            <textarea rows={5} value={s.disclaimerText ?? (s.disclaimer || []).join("\n")} onChange={(e) => setS({ ...s, disclaimerText: e.target.value })} />
+          </div>
         </div>
         <button className="btn-red">Save settings</button>
-        {msg && <p className="ok">{msg}</p>}
+      </form>
+      <PasswordForm />
+    </>
+  );
+}
+
+function PasswordForm() {
+  const [form, setForm] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  return (
+    <form
+      className="card"
+      style={{ marginTop: 18 }}
+      onSubmit={async (e) => {
+        e.preventDefault();
+        if (form.newPassword !== form.confirmPassword) {
+          await swalError("Passwords do not match", "Enter the same new password in both fields.");
+          return;
+        }
+        try {
+          await adminApi("/api/admin/password", {
+            method: "PUT",
+            body: JSON.stringify({
+              currentPassword: form.currentPassword,
+              newPassword: form.newPassword,
+            }),
+          });
+          setForm({ currentPassword: "", newPassword: "", confirmPassword: "" });
+          await swalSuccess("Password updated", "Use the new password the next time you sign in.");
+        } catch (ex) {
+          await swalError("Could not update password", ex.message);
+        }
+      }}
+    >
+      <h2 className="card-title">Account password</h2>
+      <p className="card-hint">Change the password used to sign in to this admin panel.</p>
+      <div className="settings-grid">
+        <div className="field span-2">
+          <label>Current password</label>
+          <input type="password" required autoComplete="current-password" value={form.currentPassword} onChange={(e) => setForm({ ...form, currentPassword: e.target.value })} />
+        </div>
+        <div className="field">
+          <label>New password</label>
+          <input type="password" required minLength={8} autoComplete="new-password" value={form.newPassword} onChange={(e) => setForm({ ...form, newPassword: e.target.value })} />
+        </div>
+        <div className="field">
+          <label>Confirm new password</label>
+          <input type="password" required minLength={8} autoComplete="new-password" value={form.confirmPassword} onChange={(e) => setForm({ ...form, confirmPassword: e.target.value })} />
+        </div>
+      </div>
+      <button className="btn-red" type="submit">Update password</button>
+    </form>
+  );
+}
+
+export function AboutSettings() {
+  const [s, setS] = useState(null);
+  useEffect(() => { adminApi("/api/admin/settings").then(setS); }, []);
+  if (!s) return <p>Loading…</p>;
+  return (
+    <>
+      <div className="page-head">
+        <div>
+          <h1>About page</h1>
+          <p>This content appears on the public About page.</p>
+        </div>
+      </div>
+      <form className="card" onSubmit={async (e) => {
+        e.preventDefault();
+        try {
+          await adminApi("/api/admin/settings", { method: "PUT", body: JSON.stringify(s) });
+          await swalSuccess("About page saved", "The public About page will update after a refresh.");
+        } catch (ex) {
+          await swalError("Could not save About page", ex.message);
+        }
+      }}>
+        <div className="settings-grid">
+          <div className="field span-2">
+            <label>Photo</label>
+            <ImageField value={s.aboutImage || ""} onChange={(url) => setS({ ...s, aboutImage: url })} />
+          </div>
+          <div className="field">
+            <label>Eyebrow</label>
+            <input value={s.aboutEyebrow || ""} onChange={(e) => setS({ ...s, aboutEyebrow: e.target.value })} placeholder="Adi Shakti Peetha" />
+          </div>
+          <div className="field">
+            <label>Title</label>
+            <input value={s.aboutTitle || ""} onChange={(e) => setS({ ...s, aboutTitle: e.target.value })} placeholder="Maa Charchika Temple" />
+          </div>
+          <div className="field span-2">
+            <label>Lead</label>
+            <textarea rows={3} value={s.aboutLead || ""} onChange={(e) => setS({ ...s, aboutLead: e.target.value })} placeholder="Short introduction under the title" />
+          </div>
+          <div className="field span-2">
+            <label>About text</label>
+            <RichEditor value={s.about || ""} onChange={(html) => setS({ ...s, about: html })} />
+          </div>
+          <div className="field">
+            <label>Darshan hours</label>
+            <input value={s.aboutDarshan || ""} onChange={(e) => setS({ ...s, aboutDarshan: e.target.value })} placeholder="6:00 AM – 9:00 PM" />
+          </div>
+          <div className="field">
+            <label>Hill shrine</label>
+            <input value={s.aboutHill || ""} onChange={(e) => setS({ ...s, aboutHill: e.target.value })} placeholder="Ruchika Parvata, Banki" />
+          </div>
+        </div>
+        <button className="btn-red">Save about page</button>
       </form>
     </>
   );
 }
 
 function Crud({ col, fields, title, selects = {}, defaults = {}, hint }) {
+  const loc = useLocation();
   const [rows, setRows] = useState([]);
   const [edit, setEdit] = useState(null);
   async function load() {
@@ -105,67 +314,178 @@ function Crud({ col, fields, title, selects = {}, defaults = {}, hint }) {
   }
   useEffect(() => { load(); }, [col]);
 
+  useEffect(() => {
+    setEdit(null);
+  }, [col, loc.pathname, loc.key]);
+
+  useEffect(() => {
+    function showList() { setEdit(null); }
+    window.addEventListener("admin:show-list", showList);
+    return () => window.removeEventListener("admin:show-list", showList);
+  }, []);
+
+  useEffect(() => {
+    if (!edit) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    function onKey(e) {
+      if (e.key === "Escape") setEdit(null);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = prev;
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [edit]);
+
   async function save(e) {
     e.preventDefault();
-    if (edit.id) await adminApi(`/api/admin/${col}/${edit.id}`, { method: "PUT", body: JSON.stringify(edit) });
-    else await adminApi(`/api/admin/${col}`, { method: "POST", body: JSON.stringify(edit) });
-    setEdit(null);
-    load();
+    try {
+      if (edit.id) await adminApi(`/api/admin/${col}/${edit.id}`, { method: "PUT", body: JSON.stringify(edit) });
+      else await adminApi(`/api/admin/${col}`, { method: "POST", body: JSON.stringify(edit) });
+      setEdit(null);
+      await load();
+      await swalSuccess(edit.id ? "Changes saved" : "Item added", `${title} list has been updated.`);
+    } catch (ex) {
+      await swalError("Could not save", ex.message);
+    }
   }
 
   return (
     <>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1>{title}</h1>
-        <button className="btn-red" onClick={() => setEdit({ ...defaults })}>Add</button>
+      <div className="page-head">
+        <div>
+          <h1>{title}</h1>
+          {hint && <p>{hint}</p>}
+        </div>
+        <button className="btn-red" onClick={() => setEdit({ ...defaults, active: true })}>Add new</button>
       </div>
-      {hint && <p className="muted">{hint}</p>}
-      <table className="table">
-        <thead><tr>{fields.slice(0, 4).map((f) => <th key={f}>{f}</th>)}<th /></tr></thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.id}>
-              {fields.slice(0, 4).map((f) => (
-                <td key={f}>
-                  {f === "image" && r[f] ? <img src={r[f]} alt="" className="admin-thumb" /> : String(r[f] ?? "").slice(0, 48)}
+      <div className="table-wrap">
+        <table className="table">
+          <thead><tr>{fields.slice(0, 4).map((f) => <th key={f}>{prettyLabel(f)}</th>)}<th>Status</th><th>Actions</th></tr></thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id} className={r.active === false ? "row-inactive" : ""}>
+                {fields.slice(0, 4).map((f) => (
+                  <td key={f}>
+                    {f === "image" && r[f] ? (
+                      <button type="button" className="img-preview-btn" onClick={() => swalImage(r[f], r.title)} aria-label="View image">
+                        <img src={r[f]} alt={r.title || ""} className="admin-thumb" />
+                      </button>
+                    ) : String(r[f] ?? "").slice(0, 48)}
+                  </td>
+                ))}
+                <td>
+                  <button
+                    type="button"
+                    className={`status-toggle ${r.active !== false ? "is-on" : "is-off"}`}
+                    onClick={async () => {
+                      const nextActive = r.active === false;
+                      const ok = await swalConfirm({
+                        title: nextActive ? "Activate this item?" : "Deactivate this item?",
+                        text: nextActive
+                          ? "It will appear on the public site."
+                          : "It will stay in admin but be hidden on the public site.",
+                        confirmText: nextActive ? "Activate" : "Deactivate",
+                        destructive: !nextActive,
+                      });
+                      if (!ok) return;
+                      try {
+                        await adminApi(`/api/admin/${col}/${r.id}`, { method: "PUT", body: JSON.stringify({ ...r, active: nextActive }) });
+                        await load();
+                        swalToast(nextActive ? "Marked active" : "Marked inactive");
+                      } catch (ex) {
+                        await swalError("Could not update status", ex.message);
+                      }
+                    }}
+                  >
+                    <span className="status-dot" />
+                    {r.active !== false ? "Active" : "Inactive"}
+                  </button>
                 </td>
-              ))}
-              <td className="row-actions">
-                <button className="btn-outline" onClick={() => setEdit(r)}>Edit</button>
-                <button className="danger" onClick={async () => { if (confirm("Delete?")) { await adminApi(`/api/admin/${col}/${r.id}`, { method: "DELETE" }); load(); } }}>Delete</button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-      {!rows.length && <p className="muted">No items yet. Click Add to create one.</p>}
-      {edit && (
-        <div className="modal-backdrop">
-          <form className="modal" style={{ textAlign: "left", width: "min(560px, 100%)" }} onSubmit={save}>
-            <button type="button" className="close-x" onClick={() => setEdit(null)}>×</button>
-            <h2>{edit.id ? "Edit" : "Add"}</h2>
-            {fields.map((f) => (
-              <div className="field" key={f}>
-                <label>{f}</label>
-                {f === "image" ? (
-                  <ImageField value={edit[f] || ""} onChange={(url) => setEdit({ ...edit, image: url })} />
-                ) : f === "description" || f === "body" || f === "excerpt" || f === "text" || f === "highlights" || f === "rituals" ? (
-                  <textarea rows={4} value={edit[f] || ""} onChange={(e) => setEdit({ ...edit, [f]: e.target.value })} />
-                ) : f === "consecrated" || f === "featured" || f === "approved" ? (
-                  <select value={String(!!edit[f])} onChange={(e) => setEdit({ ...edit, [f]: e.target.value === "true" })}>
-                    <option value="true">true</option>
-                    <option value="false">false</option>
-                  </select>
-                ) : selects[f] ? (
-                  <select value={edit[f] || selects[f][0]} onChange={(e) => setEdit({ ...edit, [f]: e.target.value })}>
-                    {selects[f].map((opt) => <option key={opt} value={opt}>{opt}</option>)}
-                  </select>
-                ) : (
-                  <input value={edit[f] ?? ""} onChange={(e) => setEdit({ ...edit, [f]: f === "price" || f === "stock" || f === "order" || f === "rating" ? Number(e.target.value) : e.target.value })} />
-                )}
-              </div>
+                <td className="row-actions">
+                  <button className="btn-outline" onClick={() => setEdit({ ...r, active: r.active !== false })}>Edit</button>
+                  <button className="danger" onClick={async () => {
+                    const ok = await swalConfirm({
+                      title: "Delete this item?",
+                      text: "This cannot be undone.",
+                      confirmText: "Delete",
+                      destructive: true,
+                    });
+                    if (!ok) return;
+                    try {
+                      await adminApi(`/api/admin/${col}/${r.id}`, { method: "DELETE" });
+                      await load();
+                      swalToast("Deleted");
+                    } catch (ex) {
+                      await swalError("Could not delete", ex.message);
+                    }
+                  }}>Delete</button>
+                </td>
+              </tr>
             ))}
-            <button className="btn-red">Save</button>
+          </tbody>
+        </table>
+      </div>
+      {!rows.length && <p className="muted">No items yet. Use Add to create the first one.</p>}
+      {edit && (
+        <div className="editor-page">
+          <form className="editor-form" onSubmit={save}>
+            <header className="editor-bar">
+              <p>{title}</p>
+              <h2>{edit.id ? "Edit" : "Add"} {title.toLowerCase()}</h2>
+            </header>
+            <div className="editor-scroll">
+              <div className="editor-grid">
+                {fields.filter((f) => !RICH_FIELDS.has(f)).map((f) => (
+                  <div className={`field${f === "image" || f === "pdf" || f === "highlights" || f === "rituals" ? " span-2" : ""}`} key={f}>
+                    <label>{prettyLabel(f)}</label>
+                    {f === "image" ? (
+                      <ImageField value={edit[f] || ""} onChange={(url) => setEdit({ ...edit, image: url })} />
+                    ) : f === "pdf" ? (
+                      <FileField value={edit[f] || ""} accept="application/pdf,.pdf" onChange={(url) => setEdit({ ...edit, pdf: url })} />
+                    ) : f === "highlights" || f === "rituals" ? (
+                      <textarea rows={3} value={edit[f] || ""} onChange={(e) => setEdit({ ...edit, [f]: e.target.value })} />
+                    ) : f === "active" ? (
+                      <select value={String(edit[f] !== false)} onChange={(e) => setEdit({ ...edit, [f]: e.target.value === "true" })}>
+                        <option value="true">Active</option>
+                        <option value="false">Inactive</option>
+                      </select>
+                    ) : f === "featured" ? (
+                      <select value={String(!!edit[f])} onChange={(e) => setEdit({ ...edit, [f]: e.target.value === "true" })}>
+                        <option value="true">Yes</option>
+                        <option value="false">No</option>
+                      </select>
+                    ) : selects[f] ? (
+                      <select value={edit[f] || selects[f][0]} onChange={(e) => setEdit({ ...edit, [f]: e.target.value })}>
+                        {selects[f].map((opt) => <option key={opt} value={opt}>{opt}</option>)}
+                      </select>
+                    ) : (
+                      <input value={edit[f] ?? ""} onChange={(e) => setEdit({ ...edit, [f]: f === "order" ? Number(e.target.value) : e.target.value })} />
+                    )}
+                  </div>
+                ))}
+                {fields.filter((f) => RICH_FIELDS.has(f)).map((f) => (
+                  <div className="field span-all" key={f}>
+                    <label>{prettyLabel(f)}</label>
+                    <RichEditor key={`${f}-${edit.id || "new"}`} value={edit[f] || ""} onChange={(html) => setEdit({ ...edit, [f]: html })} />
+                  </div>
+                ))}
+              </div>
+            </div>
+            <footer className="editor-foot">
+              <button type="button" className="btn-outline" onClick={async () => {
+                const ok = await swalConfirm({
+                  title: "Discard changes?",
+                  text: "Unsaved edits will be lost.",
+                  confirmText: "Discard",
+                  destructive: true,
+                  icon: "question",
+                });
+                if (ok) setEdit(null);
+              }}>Cancel</button>
+              <button className="btn-red">Save</button>
+            </footer>
           </form>
         </div>
       )}
@@ -173,27 +493,68 @@ function Crud({ col, fields, title, selects = {}, defaults = {}, hint }) {
   );
 }
 
-function ImageField({ value, onChange }) {
+export function EventsPage() {
+  return (
+    <Crud
+      col="events"
+      title="Events"
+      fields={["title", "slug", "image", "excerpt", "body", "timing", "duration", "footfall", "location", "highlights", "rituals", "startsAt", "endsAt", "cta", "featured", "active"]}
+      defaults={{ title: "", slug: "", image: "", excerpt: "", body: "", timing: "", duration: "", footfall: "", location: "", highlights: "", rituals: "", startsAt: "", endsAt: "", cta: "Learn More", featured: true, active: true }}
+      hint="Inactive events stay in admin but are hidden on the public site."
+    />
+  );
+}
+
+export function BooksPage() {
+  return (
+    <Crud
+      col="books"
+      title="Books"
+      fields={["title", "slug", "image", "pdf", "author", "publisher", "publishedYear", "language", "category", "pages", "excerpt", "body", "highlights", "featured", "active"]}
+      selects={{ category: ["Devotional", "Literature", "History", "Folk arts"] }}
+      defaults={{ title: "", slug: "", image: "", pdf: "", author: "", publisher: "", publishedYear: "", language: "Odia", category: "Literature", pages: "", excerpt: "", body: "", highlights: "", featured: true, active: true }}
+      hint="Inactive books stay in admin but are hidden on the public site."
+    />
+  );
+}
+
+export function GalleryPage() {
+  return (
+    <Crud
+      col="gallery"
+      title="Gallery"
+      fields={["title", "category", "image", "order", "active"]}
+      selects={{ category: ["Temple", "Festivals", "Deities", "Events"] }}
+      defaults={{ title: "", category: "Temple", image: "", order: 0, active: true }}
+      hint="Inactive photos stay in admin but are hidden on the public Gallery page."
+    />
+  );
+}
+
+function ImageField({ value, onChange, accept = "image/*" }) {
   const [busy, setBusy] = useState(false);
-  const [err, setErr] = useState("");
   return (
     <div>
-      {value ? <img src={value} alt="" className="admin-thumb-lg" /> : null}
+      {value ? (
+        <button type="button" className="img-preview-btn img-preview-btn-block" onClick={() => swalImage(value)} aria-label="View image">
+          <img src={value} alt="" className="admin-thumb-lg" />
+        </button>
+      ) : null}
       <input
         type="file"
-        accept="image/*"
+        accept={accept}
         onChange={async (e) => {
           const file = e.target.files?.[0];
           if (!file) return;
           setBusy(true);
-          setErr("");
           try {
             const fd = new FormData();
             fd.append("file", file);
             const data = await adminApi("/api/admin/upload", { method: "POST", body: fd });
             onChange(data.url);
+            swalToast("File uploaded");
           } catch (ex) {
-            setErr(ex.message);
+            await swalError("Upload failed", ex.message);
           } finally {
             setBusy(false);
             e.target.value = "";
@@ -202,82 +563,190 @@ function ImageField({ value, onChange }) {
       />
       <input placeholder="or paste image URL" value={value || ""} onChange={(e) => onChange(e.target.value)} />
       {busy && <small>Uploading…</small>}
-      {err && <p className="err">{err}</p>}
     </div>
   );
 }
 
-function StatusTable({ col, title }) {
+function FileField({ value, onChange, accept }) {
+  const [busy, setBusy] = useState(false);
+  return (
+    <div>
+      {value ? <a href={value} target="_blank" rel="noreferrer">{value}</a> : null}
+      <input
+        type="file"
+        accept={accept}
+        onChange={async (e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          setBusy(true);
+          try {
+            const fd = new FormData();
+            fd.append("file", file);
+            const data = await adminApi("/api/admin/upload", { method: "POST", body: fd });
+            onChange(data.url);
+            swalToast("File uploaded");
+          } catch (ex) {
+            await swalError("Upload failed", ex.message);
+          } finally {
+            setBusy(false);
+            e.target.value = "";
+          }
+        }}
+      />
+      <input placeholder="or paste PDF URL" value={value || ""} onChange={(e) => onChange(e.target.value)} />
+      {busy && <small>Uploading…</small>}
+    </div>
+  );
+}
+
+export function MessagesPage() {
+  return <StatusTable title="Messages" />;
+}
+
+function StatusTable({ title }) {
   const [rows, setRows] = useState([]);
-  async function load() { setRows(await adminApi(`/api/admin/${col}`)); }
-  useEffect(() => { load(); }, [col]);
+  async function load() { setRows(await adminApi("/api/admin/messages")); }
+  useEffect(() => { load(); }, []);
   return (
     <>
-      <h1>{title}</h1>
-      <table className="table">
-        <thead><tr><th>When</th><th>Name</th><th>Detail</th><th>Status</th><th /></tr></thead>
-        <tbody>
-          {rows.map((r) => (
-            <tr key={r.id}>
-              <td>{new Date(r.createdAt).toLocaleString()}</td>
-              <td>{r.name}<br /><small>{r.phone}</small></td>
-              <td>{r.pujaTitle || r.items?.map((i) => `${i.title}×${i.qty}`).join(", ") || r.message} {r.total ? ` · ${rupee(r.total)}` : r.amount ? ` · ${rupee(r.amount)}` : ""}</td>
-              <td>{r.status || (r.read ? "read" : "new")}</td>
-              <td>
-                {r.status && ["pending", "confirmed", "completed", "cancelled"].map((st) => (
-                  <button key={st} className="btn-outline" onClick={async () => { await adminApi(`/api/admin/${col}/${r.id}`, { method: "PUT", body: JSON.stringify({ ...r, status: st }) }); load(); }}>{st}</button>
-                ))}
-                {col === "messages" && (
-                  <button className="btn-outline" onClick={async () => { await adminApi(`/api/admin/messages/${r.id}`, { method: "PUT", body: JSON.stringify({ ...r, read: true }) }); load(); }}>mark read</button>
-                )}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="page-head">
+        <div>
+          <h1>{title}</h1>
+          <p>Messages submitted from the public Contact page.</p>
+        </div>
+      </div>
+      <div className="table-wrap">
+        <table className="table">
+          <thead><tr><th>Received</th><th>From</th><th>Message</th><th>Status</th><th /></tr></thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id}>
+                <td>{new Date(r.createdAt).toLocaleString()}</td>
+                <td>{r.name}<br /><small>{r.email || r.phone}</small></td>
+                <td>{r.message}</td>
+                <td><span className={`badge ${r.read ? "badge-read" : "badge-new"}`}>{r.read ? "Read" : "New"}</span></td>
+                <td>
+                  {!r.read && (
+                    <button className="btn-outline" onClick={async () => {
+                      try {
+                        await adminApi(`/api/admin/messages/${r.id}`, { method: "PUT", body: JSON.stringify({ ...r, read: true }) });
+                        await load();
+                        swalToast("Marked as read");
+                      } catch (ex) {
+                        await swalError("Could not update message", ex.message);
+                      }
+                    }}>Mark read</button>
+                  )}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      {!rows.length && <p className="muted">No messages yet.</p>}
     </>
   );
 }
 
+function SideIcon({ name }) {
+  const paths = {
+    dashboard: "M4 4h7v7H4V4zm9 0h7v7h-7V4zM4 13h7v7H4v-7zm9 0h7v7h-7v-7z",
+    events: "M7 3v3M17 3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm3 7h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01",
+    books: "M5 4h11a2 2 0 0 1 2 2v14H7a2 2 0 0 0-2 2V4zm0 0v16M16 8H9m7 4H9",
+    gallery: "M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6zm3 10 3.5-4.5 2.5 3 1.5-2L18 16M9 9h.01",
+    settings: "M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4",
+    messages: "M4 6h16v10H7l-3 3V6z",
+    about: "M12 3a9 9 0 1 0 .01 0zM12 8h.01M11 12h2v6h-2",
+    external: "M10 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4M14 4h6v6M10 14 20 4",
+    logout: "M10 17l-1 0a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3h1M14 12h8m-3-3 3 3-3 3",
+  };
+  return (
+    <svg className="side-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d={paths[name]} />
+    </svg>
+  );
+}
+
+function MenuLink({ to, end, children }) {
+  return (
+    <NavLink
+      className="side-link"
+      to={to}
+      end={end}
+      onClick={() => window.dispatchEvent(new Event("admin:show-list"))}
+    >
+      {children}
+    </NavLink>
+  );
+}
+
 export function AdminApp() {
-  const { logout } = useApp();
+  const { logout, user } = useApp();
+  const [brand, setBrand] = useState(null);
   const citizenUrl = import.meta.env.VITE_CITIZEN_URL || "http://localhost:5173";
+  useEffect(() => {
+    adminApi("/api/admin/settings").then(setBrand).catch(() => setBrand(null));
+  }, []);
+  useEffect(() => {
+    const href = brand?.favicon || brand?.logo || "/favicon.svg";
+    let link = document.querySelector("link[rel='icon']");
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "icon";
+      document.head.appendChild(link);
+    }
+    link.href = href;
+    if (brand?.siteName) document.title = `${brand.siteName} Admin`;
+  }, [brand]);
+  const logo = brand?.logo || "/logo.svg";
   return (
     <Guard>
       <div className="admin-shell">
         <aside className="admin-side">
-          <span className="brand-name" style={{ display: "block", marginBottom: 16 }}>Banki Mahotsav</span>
-          <NavLink to="/" end>Dashboard</NavLink>
-          <NavLink to="/settings">Site settings</NavLink>
-          <NavLink to="/history">History</NavLink>
-          <NavLink to="/events">Festivals</NavLink>
-          <NavLink to="/news">News</NavLink>
-          <NavLink to="/pujas">Pujas</NavLink>
-          <NavLink to="/offerings">Offerings</NavLink>
-          <NavLink to="/gallery">Gallery</NavLink>
-          <NavLink to="/reviews">Reviews</NavLink>
-          <NavLink to="/bookings">Bookings</NavLink>
-          <NavLink to="/orders">Orders</NavLink>
-          <NavLink to="/messages">Messages</NavLink>
-          <a href={citizenUrl} target="_blank" rel="noreferrer" style={{ marginTop: 12 }}>View citizen site</a>
-          <button className="btn-yellow" style={{ marginTop: 18 }} onClick={logout}>Logout</button>
+          <div className="side-brand">
+            <img className="side-logo" src={logo} alt="" />
+            <div>
+              <strong>{brand?.siteName || "Banki Mahotsav"}</strong>
+              <small>Administration</small>
+            </div>
+          </div>
+          <nav className="side-nav">
+            <p className="side-label">Main</p>
+            <MenuLink to="/" end><SideIcon name="dashboard" />Dashboard</MenuLink>
+            <p className="side-label">Content</p>
+            <MenuLink to="/events"><SideIcon name="events" />Events</MenuLink>
+            <MenuLink to="/books"><SideIcon name="books" />Books</MenuLink>
+            <MenuLink to="/gallery"><SideIcon name="gallery" />Gallery</MenuLink>
+            <p className="side-label">Manage</p>
+            <MenuLink to="/about"><SideIcon name="about" />About</MenuLink>
+            <MenuLink to="/settings"><SideIcon name="settings" />Settings</MenuLink>
+            <MenuLink to="/messages"><SideIcon name="messages" />Messages</MenuLink>
+          </nav>
+          <div className="side-foot">
+            <a className="side-link" href={citizenUrl} target="_blank" rel="noreferrer"><SideIcon name="external" />Public website</a>
+            <div className="side-account">
+              <span className="side-avatar">{(user?.name || "A").slice(0, 1)}</span>
+              <div>
+                <b>{user?.name || "Administrator"}</b>
+                <small>{user?.email}</small>
+              </div>
+            </div>
+            <button className="side-link side-logout" type="button" onClick={async () => {
+              const ok = await swalConfirm({
+                title: "Sign out?",
+                text: "You will need to sign in again to manage the site.",
+                confirmText: "Sign out",
+                icon: "question",
+              });
+              if (ok) {
+                logout();
+                swalToast("Signed out");
+              }
+            }}><SideIcon name="logout" />Sign out</button>
+          </div>
         </aside>
         <main className="admin-main">
-          <Routes>
-            <Route index element={<Dashboard />} />
-            <Route path="settings" element={<SettingsEditor />} />
-            <Route path="history" element={<Crud col="history" title="History" fields={["title", "slug", "subtitle", "excerpt", "body", "image", "order"]} />} />
-            <Route path="events" element={<Crud col="events" title="Festivals" fields={["title", "slug", "image", "excerpt", "body", "timing", "duration", "footfall", "location", "highlights", "rituals", "startsAt", "endsAt", "cta", "featured"]} defaults={{ title: "", slug: "", image: "", excerpt: "", body: "", timing: "", duration: "", footfall: "", location: "", highlights: "", rituals: "", startsAt: "", endsAt: "", cta: "Learn More", featured: true }} hint="Festivals appear on the citizen Festivals page and their detail pages." />} />
-            <Route path="pujas" element={<Crud col="pujas" title="Pujas" fields={["title", "slug", "category", "price", "duration", "description", "image", "featured"]} />} />
-            <Route path="offerings" element={<Crud col="offerings" title="Offerings" fields={["title", "slug", "price", "description", "image"]} />} />
-            <Route path="news" element={<Crud col="news" title="News & Announcements" fields={["title", "excerpt", "badge"]} selects={{ badge: ["Featured", "Latest", "Urgent"] }} defaults={{ title: "", excerpt: "", badge: "Latest" }} hint="These cards appear on the homepage under News & Announcements." />} />
-            <Route path="gallery" element={<Crud col="gallery" title="Gallery" fields={["title", "category", "image", "order"]} selects={{ category: ["Temple", "Festivals", "Deities", "Events"] }} defaults={{ title: "", category: "Temple", image: "", order: 0 }} hint="Photos saved here appear on the citizen Gallery page." />} />
-            <Route path="products" element={<Crud col="products" title="Store products" fields={["title", "slug", "price", "category", "stock", "description", "image", "consecrated"]} />} />
-            <Route path="reviews" element={<Crud col="reviews" title="Reviews" fields={["name", "rating", "text", "approved"]} />} />
-            <Route path="bookings" element={<StatusTable col="bookings" title="Puja bookings" />} />
-            <Route path="orders" element={<StatusTable col="orders" title="Store orders" />} />
-            <Route path="messages" element={<StatusTable col="messages" title="Contact messages" />} />
-          </Routes>
+          <Outlet />
         </main>
       </div>
     </Guard>

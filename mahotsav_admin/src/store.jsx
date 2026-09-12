@@ -39,7 +39,3 @@ export function AppProvider({ children }) {
 export function useApp() {
   return useContext(Ctx);
 }
-
-export function rupee(n) {
-  return `₹${Number(n || 0).toLocaleString("en-IN")}`;
-}

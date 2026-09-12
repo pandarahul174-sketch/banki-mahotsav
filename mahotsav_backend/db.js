@@ -58,50 +58,6 @@ CREATE TABLE IF NOT EXISTS users (
   created_at DATETIME NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS history (
-  id VARCHAR(64) PRIMARY KEY,
-  slug VARCHAR(191) UNIQUE,
-  title VARCHAR(255),
-  subtitle VARCHAR(255),
-  excerpt TEXT,
-  body TEXT,
-  image VARCHAR(500),
-  sort_order INT DEFAULT 0
-);
-
-CREATE TABLE IF NOT EXISTS pujas (
-  id VARCHAR(64) PRIMARY KEY,
-  slug VARCHAR(191) UNIQUE,
-  title VARCHAR(255),
-  category VARCHAR(128),
-  price DECIMAL(10,2) DEFAULT 0,
-  duration VARCHAR(64),
-  featured TINYINT(1) DEFAULT 0,
-  description TEXT,
-  image VARCHAR(500)
-);
-
-CREATE TABLE IF NOT EXISTS offerings (
-  id VARCHAR(64) PRIMARY KEY,
-  slug VARCHAR(191) UNIQUE,
-  title VARCHAR(255),
-  price DECIMAL(10,2) DEFAULT 0,
-  description TEXT,
-  image VARCHAR(500)
-);
-
-CREATE TABLE IF NOT EXISTS products (
-  id VARCHAR(64) PRIMARY KEY,
-  slug VARCHAR(191) UNIQUE,
-  title VARCHAR(255),
-  price DECIMAL(10,2) DEFAULT 0,
-  category VARCHAR(128),
-  consecrated TINYINT(1) DEFAULT 0,
-  stock INT DEFAULT 0,
-  description TEXT,
-  image VARCHAR(500)
-);
-
 CREATE TABLE IF NOT EXISTS events (
   id VARCHAR(64) PRIMARY KEY,
   slug VARCHAR(191) UNIQUE,
@@ -119,52 +75,27 @@ CREATE TABLE IF NOT EXISTS events (
   highlights TEXT,
   rituals TEXT,
   cta VARCHAR(128),
-  featured TINYINT(1) DEFAULT 0
+  featured TINYINT(1) DEFAULT 0,
+  active TINYINT(1) DEFAULT 1
 );
 
-CREATE TABLE IF NOT EXISTS news (
+CREATE TABLE IF NOT EXISTS books (
   id VARCHAR(64) PRIMARY KEY,
+  slug VARCHAR(191) UNIQUE,
   title VARCHAR(255),
+  author VARCHAR(255),
+  publisher VARCHAR(255),
+  published_year VARCHAR(32),
+  language VARCHAR(64),
+  category VARCHAR(128),
+  pages VARCHAR(32),
   excerpt TEXT,
-  badge VARCHAR(32),
-  created_at DATETIME NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS reviews (
-  id VARCHAR(64) PRIMARY KEY,
-  name VARCHAR(255),
-  rating INT DEFAULT 5,
-  text TEXT,
-  approved TINYINT(1) DEFAULT 0,
-  reactions JSON,
-  created_at DATETIME NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS bookings (
-  id VARCHAR(64) PRIMARY KEY,
-  name VARCHAR(255),
-  email VARCHAR(255),
-  phone VARCHAR(64),
-  puja_id VARCHAR(64),
-  puja_title VARCHAR(255),
-  amount DECIMAL(10,2) DEFAULT 0,
-  date VARCHAR(64),
-  gotra VARCHAR(128),
-  notes TEXT,
-  status VARCHAR(32) DEFAULT 'pending',
-  created_at DATETIME NOT NULL
-);
-
-CREATE TABLE IF NOT EXISTS orders (
-  id VARCHAR(64) PRIMARY KEY,
-  name VARCHAR(255),
-  email VARCHAR(255),
-  phone VARCHAR(64),
-  address TEXT,
-  items JSON,
-  total DECIMAL(10,2) DEFAULT 0,
-  status VARCHAR(32) DEFAULT 'pending',
-  created_at DATETIME NOT NULL
+  body TEXT,
+  image VARCHAR(500),
+  pdf VARCHAR(500),
+  highlights TEXT,
+  featured TINYINT(1) DEFAULT 0,
+  active TINYINT(1) DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS gallery (
@@ -172,7 +103,8 @@ CREATE TABLE IF NOT EXISTS gallery (
   title VARCHAR(255),
   category VARCHAR(64),
   image VARCHAR(500),
-  sort_order INT DEFAULT 0
+  sort_order INT DEFAULT 0,
+  active TINYINT(1) DEFAULT 1
 );
 
 CREATE TABLE IF NOT EXISTS messages (
@@ -195,12 +127,21 @@ function mapSettings(row) {
     priestFather: row.priest_father,
     phone: row.phone,
     email: row.email,
+    contactEmail: row.contact_email || "",
     whatsapp: row.whatsapp,
     address: row.address,
     welcomeTitle: row.welcome_title,
     welcomeSubtitle: row.welcome_subtitle,
     heroImage: row.hero_image,
     about: row.about,
+    aboutEyebrow: row.about_eyebrow || "",
+    aboutTitle: row.about_title || "",
+    aboutLead: row.about_lead || "",
+    aboutImage: row.about_image || "",
+    aboutDarshan: row.about_darshan || "",
+    aboutHill: row.about_hill || "",
+    logo: row.logo || "",
+    favicon: row.favicon || "",
     disclaimer: json(row.disclaimer, []),
   };
 }
@@ -214,56 +155,43 @@ function settingsToRow(s) {
     priest_father: s.priestFather,
     phone: s.phone,
     email: s.email,
+    contact_email: s.contactEmail || "",
     whatsapp: s.whatsapp,
     address: s.address,
     welcome_title: s.welcomeTitle,
     welcome_subtitle: s.welcomeSubtitle,
     hero_image: s.heroImage,
     about: s.about,
+    about_eyebrow: s.aboutEyebrow || "",
+    about_title: s.aboutTitle || "",
+    about_lead: s.aboutLead || "",
+    about_image: s.aboutImage || "",
+    about_darshan: s.aboutDarshan || "",
+    about_hill: s.aboutHill || "",
+    logo: s.logo || "",
+    favicon: s.favicon || "",
     disclaimer: JSON.stringify(s.disclaimer || []),
   };
 }
 
 const MAPS = {
-  history: (r) => ({
+  books: (r) => ({
     id: r.id,
     slug: r.slug,
     title: r.title,
-    subtitle: r.subtitle,
-    excerpt: r.excerpt,
-    body: r.body,
+    author: r.author || "",
+    publisher: r.publisher || "",
+    publishedYear: r.published_year || "",
+    language: r.language || "",
+    category: r.category || "",
+    pages: r.pages || "",
+    excerpt: r.excerpt || "",
+    body: r.body || "",
     image: r.image,
-    order: r.sort_order,
-  }),
-  pujas: (r) => ({
-    id: r.id,
-    slug: r.slug,
-    title: r.title,
-    category: r.category,
-    price: Number(r.price),
-    duration: r.duration,
+    pdf: r.pdf || "",
+    highlights: r.highlights || "",
     featured: bool(r.featured),
-    description: r.description,
-    image: r.image,
-  }),
-  offerings: (r) => ({
-    id: r.id,
-    slug: r.slug,
-    title: r.title,
-    price: Number(r.price),
-    description: r.description,
-    image: r.image,
-  }),
-  products: (r) => ({
-    id: r.id,
-    slug: r.slug,
-    title: r.title,
-    price: Number(r.price),
-    category: r.category,
-    consecrated: bool(r.consecrated),
-    stock: Number(r.stock),
-    description: r.description,
-    image: r.image,
+    active: r.active == null ? true : bool(r.active),
   }),
   events: (r) => ({
     id: r.id,
@@ -283,13 +211,7 @@ const MAPS = {
     rituals: r.rituals || "",
     cta: r.cta,
     featured: bool(r.featured),
-  }),
-  news: (r) => ({
-    id: r.id,
-    title: r.title,
-    excerpt: r.excerpt,
-    badge: r.badge || "Latest",
-    createdAt: r.created_at,
+    active: r.active == null ? true : bool(r.active),
   }),
   gallery: (r) => ({
     id: r.id,
@@ -297,40 +219,7 @@ const MAPS = {
     category: r.category,
     image: r.image,
     order: r.sort_order,
-  }),
-  reviews: (r) => ({
-    id: r.id,
-    name: r.name,
-    rating: Number(r.rating),
-    text: r.text,
-    approved: bool(r.approved),
-    reactions: json(r.reactions, { like: 0, love: 0, clap: 0 }),
-    createdAt: r.created_at,
-  }),
-  bookings: (r) => ({
-    id: r.id,
-    name: r.name,
-    email: r.email,
-    phone: r.phone,
-    pujaId: r.puja_id,
-    pujaTitle: r.puja_title,
-    amount: Number(r.amount),
-    date: r.date,
-    gotra: r.gotra,
-    notes: r.notes,
-    status: r.status,
-    createdAt: r.created_at,
-  }),
-  orders: (r) => ({
-    id: r.id,
-    name: r.name,
-    email: r.email,
-    phone: r.phone,
-    address: r.address,
-    items: json(r.items, []),
-    total: Number(r.total),
-    status: r.status,
-    createdAt: r.created_at,
+    active: r.active == null ? true : bool(r.active),
   }),
   messages: (r) => ({
     id: r.id,
@@ -366,47 +255,42 @@ function toCols(obj) {
     welcomeSubtitle: "welcome_subtitle",
     heroImage: "hero_image",
     about: "about",
+    aboutEyebrow: "about_eyebrow",
+    aboutTitle: "about_title",
+    aboutLead: "about_lead",
+    aboutImage: "about_image",
+    aboutDarshan: "about_darshan",
+    aboutHill: "about_hill",
+    logo: "logo",
+    favicon: "favicon",
     disclaimer: "disclaimer",
     slug: "slug",
     title: "title",
-    subtitle: "subtitle",
     excerpt: "excerpt",
     body: "body",
     image: "image",
     order: "sort_order",
     category: "category",
-    price: "price",
     duration: "duration",
     featured: "featured",
+    active: "active",
     description: "description",
-    consecrated: "consecrated",
-    stock: "stock",
     startsAt: "starts_at",
     endsAt: "ends_at",
     cta: "cta",
-    excerpt: "excerpt",
-    body: "body",
     timing: "timing",
     footfall: "footfall",
     location: "location",
     highlights: "highlights",
     rituals: "rituals",
-    badge: "badge",
+    author: "author",
+    publisher: "publisher",
+    publishedYear: "published_year",
+    language: "language",
+    pages: "pages",
+    pdf: "pdf",
     name: "name",
-    rating: "rating",
-    text: "text",
-    approved: "approved",
-    reactions: "reactions",
     createdAt: "created_at",
-    pujaId: "puja_id",
-    pujaTitle: "puja_title",
-    amount: "amount",
-    date: "date",
-    gotra: "gotra",
-    notes: "notes",
-    status: "status",
-    items: "items",
-    total: "total",
     message: "message",
     read: "read",
     password: "password",
@@ -415,9 +299,9 @@ function toCols(obj) {
   for (const [k, v] of Object.entries(obj)) {
     if (k === "id") continue;
     const col = map[k] || k;
-    if (k === "disclaimer" || k === "reactions" || k === "items") {
-      out[col] = JSON.stringify(v ?? (k === "items" ? [] : k === "disclaimer" ? [] : { like: 0, love: 0, clap: 0 }));
-    } else if (k === "featured" || k === "consecrated" || k === "approved" || k === "read") {
+    if (k === "disclaimer") {
+      out[col] = JSON.stringify(v ?? []);
+    } else if (k === "featured" || k === "read" || k === "active") {
       out[col] = bool(v) ? 1 : 0;
     } else if ((k === "startsAt" || k === "endsAt") && (v === "" || v == null)) {
       out[col] = null;
@@ -442,11 +326,17 @@ async function init() {
   for (const stmt of SCHEMA.split(";").map((s) => s.trim()).filter(Boolean)) {
     await pool.query(stmt);
   }
+  for (const t of ["history", "pujas", "offerings", "products", "news", "reviews", "bookings", "orders"]) {
+    await query(`DROP TABLE IF EXISTS \`${t}\``);
+  }
   const [{ n }] = await query("SELECT COUNT(*) AS n FROM users");
   if (Number(n) === 0) await seed();
   await ensureEventColumns();
+  await ensureBookColumns();
+  await ensureActiveColumns();
+  await ensureAboutSettingsColumns();
   await seedFestivalsIfNeeded();
-  await seedNewsIfNeeded();
+  await seedBooksIfNeeded();
 }
 
 async function ensureEventColumns() {
@@ -466,6 +356,44 @@ async function ensureEventColumns() {
   for (const [name, def] of Object.entries(needed)) {
     if (!have.has(name)) await query(`ALTER TABLE events ADD COLUMN \`${name}\` ${def}`);
   }
+}
+
+async function ensureBookColumns() {
+  const cols = await query("SHOW COLUMNS FROM books");
+  const have = new Set(cols.map((c) => c.Field));
+  if (!have.has("pdf")) await query("ALTER TABLE books ADD COLUMN `pdf` VARCHAR(500)");
+}
+
+async function ensureActiveColumns() {
+  for (const table of ["events", "books", "gallery"]) {
+    const cols = await query(`SHOW COLUMNS FROM \`${table}\``);
+    const have = new Set(cols.map((c) => c.Field));
+    if (!have.has("active")) {
+      await query(`ALTER TABLE \`${table}\` ADD COLUMN \`active\` TINYINT(1) DEFAULT 1`);
+      await query(`UPDATE \`${table}\` SET active = 1 WHERE active IS NULL`);
+    }
+  }
+}
+
+async function ensureAboutSettingsColumns() {
+  const needed = {
+    about_eyebrow: "VARCHAR(255)",
+    about_title: "VARCHAR(255)",
+    about_lead: "TEXT",
+    about_image: "VARCHAR(500)",
+    about_darshan: "VARCHAR(255)",
+    about_hill: "VARCHAR(255)",
+    logo: "VARCHAR(500)",
+    favicon: "VARCHAR(500)",
+    contact_email: "VARCHAR(255)",
+  };
+  const cols = await query("SHOW COLUMNS FROM settings");
+  const have = new Set(cols.map((c) => c.Field));
+  for (const [name, def] of Object.entries(needed)) {
+    if (!have.has(name)) await query(`ALTER TABLE settings ADD COLUMN \`${name}\` ${def}`);
+  }
+  await query("UPDATE settings SET logo = COALESCE(NULLIF(logo,''), '/logo.svg'), favicon = COALESCE(NULLIF(favicon,''), '/favicon.svg') WHERE id = 1");
+  await query("UPDATE settings SET contact_email = COALESCE(NULLIF(contact_email,''), email) WHERE id = 1");
 }
 
 function festivalSeed() {
@@ -544,42 +472,91 @@ async function seedFestivalsIfNeeded() {
   }
 }
 
-function newsSeed() {
+function bookSeed() {
   return [
     {
       id: uuid(),
-      title: "Special Darshan Timings for Charchika Jatra",
-      excerpt: "Temple hours are extended during peak festival days. Evening aarti and special anjali will continue later than usual.",
-      badge: "Featured",
-      createdAt: now(),
+      slug: "charchika-mahatmya",
+      title: "Charchika Mahatmya",
+      author: "Temple literary committee",
+      publisher: "Banki Mahotsav",
+      publishedYear: "2018",
+      language: "Odia",
+      category: "Devotional",
+      pages: "96",
+      excerpt: "A short mahatmya of Maa Charchika — the eight-armed goddess of Ruchika Parvata, her legends, daily seva, and the faith of Banki.",
+      body: "Charchika Mahatmya gathers the living stories of Maa Charchika, the Ashta-bhuja Chamunda of Banki. It retells how the shrine on Ruchika Parvata became a Shakti peetha for Cuttack district, and how families still climb the hill for darshan, anjali, and vows.\n\nThe booklet also describes daily puja, special Ashtami rites, and the way Banki Mahotsav keeps the goddess at the centre of public life.\n\nReaders will find simple Odia verse, local memory, and a short guide for pilgrims who wish to understand the shrine before they visit.",
+      image: "https://images.pexels.com/photos/159866/books-book-pages-read-literature-159866.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      pdf: "/books/sample.pdf",
+      highlights: "Temple legend, Daily seva, Pilgrim notes, Odia verse",
+      featured: true,
     },
     {
       id: uuid(),
-      title: "Online Donation Portal Now Available",
-      excerpt: "Devotees can now send offerings and puja bookings from home. Confirmations are shared by the festival office.",
-      badge: "Latest",
-      createdAt: now(),
+      slug: "banki-mahotsav-smriti-grantha",
+      title: "Banki Mahotsav Smriti Grantha",
+      author: "Banki Mahotsav Committee",
+      publisher: "Banki Mahotsav",
+      publishedYear: "2024",
+      language: "Odia & English",
+      category: "Literature",
+      pages: "180",
+      excerpt: "The souvenir volume of Banki Mahotsav — essays, poems, photographs, and Charchika Samman notes from writers and artistes of the region.",
+      body: "Each edition of Banki Mahotsav publishes a smriti grantha that records the year's literature, folk arts, and community programmes. This volume brings together Odia poems, essays on Banki's cultural memory, and photographs from the stage and the shrine.\n\nIt also documents Charchika Samman and the social harmony that the Mahotsav tries to keep alive.\n\nKeep this book as a companion to the festival: it is meant for readers at home as much as for visitors in Banki.",
+      image: "https://images.pexels.com/photos/256450/pexels-photo-256450.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      pdf: "/books/sample.pdf",
+      highlights: "Poems and essays, Festival photographs, Charchika Samman, Bilingual notes",
+      featured: true,
     },
     {
       id: uuid(),
-      title: "Parking Arrangements for Festival Season",
-      excerpt: "Additional parking is arranged near Ruchika Parvata during festival crowds. Follow volunteer guidance at the base of the hill.",
-      badge: "Urgent",
-      createdAt: now(),
+      slug: "shakti-peethas-of-coastal-odisha",
+      title: "Shakti Peethas of Coastal Odisha",
+      author: "Regional research notes",
+      publisher: "Heritage series",
+      publishedYear: "2021",
+      language: "English",
+      category: "History",
+      pages: "128",
+      excerpt: "A readable introduction to coastal Odisha's Shakti shrines, with a chapter on Charchika Temple, Ruchika Parvata, and the Renuka river.",
+      body: "This book places Charchika Temple among the Shakti peethas of coastal Odisha. It describes the hill shrine, the river below, and how local worship sits beside wider Chamunda and Durga traditions.\n\nA dedicated chapter follows the pilgrim path at Banki and the seasonal gatherings of Chaitra and Sharadiya.\n\nMaps, short notes, and a glossary help first-time visitors and students of Odisha's sacred geography.",
+      image: "https://images.pexels.com/photos/1370295/pexels-photo-1370295.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      pdf: "/books/sample.pdf",
+      highlights: "Temple geography, Chamunda tradition, Pilgrim path, Glossary",
+      featured: false,
+    },
+    {
+      id: uuid(),
+      slug: "pala-and-sankirtan-of-banki",
+      title: "Pala and Sankirtan of Banki",
+      author: "Folk arts archive",
+      publisher: "Mahotsav cultural cell",
+      publishedYear: "2019",
+      language: "Odia",
+      category: "Folk arts",
+      pages: "112",
+      excerpt: "Notes on pala, sankirtan, and night-long kirtan that fill Banki during Mahotsav and temple festivals.",
+      body: "Banki's festivals are not only puja. Stages and courtyards fill with pala, sankirtan, and folk song. This book records performers, typical sequences, and the way these arts sit beside Charchika worship.\n\nIt is written for students, artistes, and families who want to follow the cultural nights of the Mahotsav with more understanding.\n\nPhotographs and programme notes from past editions are included as a small archive.",
+      image: "https://images.pexels.com/photos/694740/pexels-photo-694740.jpeg?auto=compress&cs=tinysrgb&w=1200",
+      pdf: "/books/sample.pdf",
+      highlights: "Pala, Sankirtan, Cultural nights, Performer notes",
+      featured: false,
     },
   ];
 }
 
-async function seedNewsIfNeeded() {
-  const [{ n }] = await query("SELECT COUNT(*) AS n FROM news");
+async function seedBooksIfNeeded() {
+  const [{ n }] = await query("SELECT COUNT(*) AS n FROM books");
   if (Number(n) === 0) {
-    for (const item of newsSeed()) await insertRow("news", item);
+    for (const item of bookSeed()) await insertRow("books", item);
+  }
+  for (const item of bookSeed()) {
+    await query("UPDATE books SET pdf = COALESCE(NULLIF(pdf,''), ?) WHERE slug = ?", [item.pdf, item.slug]);
   }
 }
 
 function seedPayload() {
   const adminHash = bcrypt.hashSync("admin123", 10);
-  const devoteeHash = bcrypt.hashSync("devotee123", 10);
   return {
     settings: {
       siteName: "Banki Mahotsav",
@@ -588,57 +565,23 @@ function seedPayload() {
       priestFather: "Charchika Temple Seva",
       phone: "+91 9876543210",
       email: "info@bankimahotsav.com",
+      contactEmail: "info@bankimahotsav.com",
       whatsapp: "+91 9876543210",
       address: "Charchika Temple Road, Banki, Cuttack, Odisha 754008",
       welcomeTitle: "Welcome to Banki Mahotsav",
       welcomeSubtitle: "Jai Maa Charchika",
-      heroImage: "/hero.svg",
+      heroImage: "/hero.jpg",
       about:
-        "Banki Mahotsav is the cultural and spiritual gathering of Banki, Odisha — celebrating Maa Charchika, Odia folk arts, literature, and community seva. Book pujas, send offerings, and support the festival from anywhere.",
+        "Banki Mahotsav is the cultural and spiritual gathering of Banki, Odisha — celebrating Maa Charchika, Odia folk arts, literature, and community seva.",
       disclaimer: [
         "This portal is managed by the Banki Mahotsav organizing committee for devotees and visitors.",
-        "Puja bookings are performed by designated priests associated with the festival seva, not as an official temple-committee ticket counter.",
-        "Please mention any known priest or special sankalp while booking.",
         "Festival dates, cultural programmes, and darshan timings may change — check Events before you travel.",
       ],
     },
     users: [
       { id: "admin-1", name: "Administrator", email: "admin@bankimahotsav.com", password: adminHash, role: "admin", createdAt: now() },
-      { id: "user-1", name: "Demo Devotee", email: "devotee@bankimahotsav.com", password: devoteeHash, role: "devotee", createdAt: now() },
     ],
-    history: [
-      { id: uuid(), slug: "maa-charchika", title: "Maa Charchika", subtitle: "Ashta-bhuja Chamunda of Banki", excerpt: "Maa Charchika, an eight-armed form of Chamunda, is the presiding goddess of Banki. She is seated upon Ruchika Parvata on the banks of the Renuka river.", body: "Maa Charchika is among the oldest Shakti peethas of Odisha. The goddess is depicted with eight arms, a garland of skulls, and fierce protective grace. Devotees believe she grants courage, protection, and fulfilment of sincere wishes. Daily puja, special Ashtami rituals, and festival anjali are offered throughout the year, with Banki Mahotsav bringing the whole region together in her honour.", image: "/temple.svg", order: 1 },
-      { id: uuid(), slug: "charchika-temple", title: "Charchika Temple", subtitle: "Ruchika Parvata · Renuka river", excerpt: "The temple stands on a small hillock above the Renuka river. Its shrine, steps, and surrounding fairs have shaped Banki's identity for generations.", body: "Charchika Temple sits on Ruchika Parvata in Banki, Cuttack district. Pilgrims climb to the sanctum for darshan of the eight-armed goddess. The temple complex becomes the spiritual heart of Banki Mahotsav, when cultural programmes, prasad distribution, and night-long kirtan fill the town. Architecture, folk memory, and living ritual together make this one of Odisha's treasured Shakti shrines.", image: "/temple.svg", order: 2 },
-      { id: uuid(), slug: "banki-mahotsav", title: "Banki Mahotsav", subtitle: "Literature, folk arts & social harmony", excerpt: "Banki Mahotsav is more than a fair — it is a living festival of Odia literature, folk performance, Charchika Samman, and community pride.", body: "Held in Banki, Odisha, the Mahotsav brings together artistes, writers, devotees, and families. Silver-jubilee editions have drawn state leadership and highlighted Banki's cultural depth. Stages host Odissi, pala, sankirtan, and local crafts. The festival also supports social cohesion and local enterprise, while keeping Maa Charchika at the centre of public life.", image: "/festival.svg", order: 3 },
-    ],
-    pujas: [
-      { id: uuid(), slug: "charchika-special-puja", title: "Charchika Special Puja", category: "All Type of Puja", price: 2100, duration: "45 mins", featured: true, description: "Complete special puja at Charchika shrine with sankalp in the devotee's name, pushpanjali, and prasad.", image: "/temple.svg" },
-      { id: uuid(), slug: "anjali-puja", title: "Anjali Puja", category: "Anjali Puja", price: 501, duration: "20 mins", featured: true, description: "Name-sankalp anjali offered to Maa Charchika with flowers, sindoor, and lamp.", image: "/temple.svg" },
-      { id: uuid(), slug: "hawan-puja", title: "Hawan Puja", category: "Hawan Puja", price: 5100, duration: "90 mins", featured: true, description: "Hawan with Charchika mantras for health, protection, and family welfare.", image: "/temple.svg" },
-      { id: uuid(), slug: "monthly-puja", title: "Monthly Puja Seva", category: "Monthly Puja", price: 1100, duration: "Monthly", featured: false, description: "Recurring monthly puja on a chosen tithi, with photo/video confirmation when possible.", image: "/temple.svg" },
-      { id: uuid(), slug: "mahotsav-event-puja", title: "Mahotsav Event Puja", category: "Events Puja", price: 2500, duration: "Festival day", featured: true, description: "Special booking during Banki Mahotsav cultural days with event-day darshan seva.", image: "/festival.svg" },
-    ],
-    offerings: [
-      { id: uuid(), slug: "saree-offering", title: "Saree Offering", price: 1500, description: "Offer a saree to Maa Charchika on your behalf during puja.", image: "/prasad.svg" },
-      { id: uuid(), slug: "bhog-prasad", title: "Bhog & Prasad", price: 751, description: "Temple-style bhog offering with shareable prasad packing when requested.", image: "/prasad.svg" },
-      { id: uuid(), slug: "deepa-seva", title: "Deepa Seva", price: 251, description: "Evening lamp seva in the devotee's name.", image: "/temple.svg" },
-    ],
-    products: [
-      { id: uuid(), slug: "charchika-tabij-protection", title: "Charchika Tabij for Protection", price: 1299, category: "Tabij", consecrated: true, stock: 40, description: "Consecrated protection tabij energised during Charchika puja.", image: "/locket.svg" },
-      { id: uuid(), slug: "charchika-tabij-study", title: "Charchika Tabij for Study", price: 1199, category: "Tabij", consecrated: true, stock: 35, description: "For students and competitive exams, consecrated on Ashtami.", image: "/locket.svg" },
-      { id: uuid(), slug: "charchika-yantra", title: "Charchika Yantra", price: 899, category: "Yantra", consecrated: true, stock: 50, description: "Copper yantra consecrated at the shrine.", image: "/locket.svg" },
-      { id: uuid(), slug: "maa-locket", title: "Maa Charchika Locket", price: 1499, category: "Locket", consecrated: true, stock: 25, description: "Pendant locket for daily wear after puja.", image: "/locket.svg" },
-      { id: uuid(), slug: "festival-prasad-box", title: "Mahotsav Prasad Box", price: 499, category: "Prasad", consecrated: false, stock: 80, description: "Festival prasad assortment packed for devotees at home.", image: "/prasad.svg" },
-      { id: uuid(), slug: "silver-locket", title: "Silver Charchika Locket", price: 2499, category: "Locket", consecrated: true, stock: 15, description: "Silver locket consecrated during special hawan.", image: "/locket.svg" },
-    ],
-    events: [
-      festivalSeed()[0],
-    ],
-    reviews: [
-      { id: uuid(), name: "Smita Rath", rating: 5, text: "Booked Anjali Puja during Mahotsav. Confirmation and prasad details were shared the same evening. Jai Maa Charchika.", approved: true, reactions: { like: 4, love: 2, clap: 1 }, createdAt: now() },
-      { id: uuid(), name: "Debasish Mohanty", rating: 5, text: "The store tabij arrived consecrated as promised. The festival pages helped our family plan the visit.", approved: true, reactions: { like: 2, love: 1, clap: 0 }, createdAt: now() },
-      { id: uuid(), name: "Anita Das", rating: 4, text: "Smooth booking for monthly puja. Would love more photos of the cultural stage next year.", approved: true, reactions: { like: 1, love: 0, clap: 1 }, createdAt: now() },
-    ],
+    events: [festivalSeed()[0]],
   };
 }
 
@@ -659,13 +602,7 @@ async function seed() {
     keys.map((k) => s[k])
   );
   for (const u of data.users) await insertRow("users", u);
-  for (const h of data.history) await insertRow("history", h);
-  for (const p of data.pujas) await insertRow("pujas", p);
-  for (const o of data.offerings) await insertRow("offerings", o);
-  for (const p of data.products) await insertRow("products", p);
   for (const e of data.events) await insertRow("events", e);
-  for (const r of data.reviews) await insertRow("reviews", r);
-  for (const n of newsSeed()) await insertRow("news", n);
 }
 
 async function list(table, extra = "") {
