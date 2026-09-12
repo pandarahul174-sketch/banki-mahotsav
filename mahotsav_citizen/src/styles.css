@@ -27,6 +27,7 @@ button, input, select, textarea { font: inherit; }
 .wrap { width: min(1120px, calc(100% - 40px)); margin: 0 auto; }
 
 .util-bar {
+  width: 100%;
   background: linear-gradient(90deg, #c2410c, #d35400);
   color: #fff;
   font-size: 12px;
@@ -42,11 +43,14 @@ button, input, select, textarea { font: inherit; }
 .util-address { opacity: .95; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 .main-header {
-  background: rgba(255,253,249,.94);
-  backdrop-filter: blur(12px);
+  width: 100%;
+  background: var(--paper);
   border-bottom: 1px solid var(--line);
+  box-shadow: 0 1px 0 rgba(201, 162, 39, 0.18);
   position: sticky;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 50;
 }
 .header-inner {
@@ -55,6 +59,18 @@ button, input, select, textarea { font: inherit; }
   gap: 18px;
   min-height: var(--header-h);
   position: relative;
+  width: 100%;
+  max-width: none;
+  padding-left: clamp(16px, 3vw, 40px);
+  padding-right: clamp(16px, 3vw, 40px);
+  box-sizing: border-box;
+}
+.util-bar .wrap {
+  width: 100%;
+  max-width: none;
+  padding-left: clamp(16px, 3vw, 40px);
+  padding-right: clamp(16px, 3vw, 40px);
+  box-sizing: border-box;
 }
 .brand { display: flex; align-items: center; gap: 10px; min-width: 0; }
 .logo-img { width: 48px; height: 48px; border-radius: 50%; object-fit: cover; }
@@ -629,11 +645,55 @@ button, input, select, textarea { font: inherit; }
 .rituals-band h2 { text-align: center; margin: 0 0 22px; }
 .ritual-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
 
-.site-footer { background: #171310; color: #ddd; padding: 48px 0 28px; }
-.footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr; gap: 28px; }
-.site-footer h3, .site-footer h4 { color: #fff; font-family: "Playfair Display", serif; margin: 0 0 10px; }
-.site-footer p { margin: 0 0 8px; line-height: 1.5; }
-.site-footer a { display: block; margin: 6px 0; color: #ccc; }
+.site-footer {
+  width: 100%;
+  background: #2b1a12;
+  color: var(--cream);
+  padding: 20px 0 0;
+  border-top: 3px solid var(--orange);
+}
+.footer-inner {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  padding: 0 clamp(16px, 3vw, 40px) 16px;
+  box-sizing: border-box;
+}
+.footer-brand { max-width: 420px; }
+.footer-cols { display: flex; gap: 48px; flex-shrink: 0; }
+.site-footer h3 {
+  color: #fff8ee;
+  font-family: "Playfair Display", serif;
+  font-size: 18px;
+  margin: 0 0 4px;
+}
+.site-footer h4 {
+  color: var(--gold);
+  font-family: "Playfair Display", serif;
+  font-size: 14px;
+  margin: 0 0 6px;
+}
+.site-footer p { margin: 0 0 2px; line-height: 1.4; font-size: 13px; color: var(--cream); }
+.site-footer a { color: #eadfce; font-size: 13px; }
+.site-footer a:hover { color: var(--gold); }
+.footer-nav-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 16px;
+}
+.footer-nav-links a { display: inline; margin: 0; }
+.footer-contact a { display: block; margin: 2px 0; }
+.footer-copy {
+  border-top: 1px solid rgba(201, 162, 39, 0.28);
+  padding: 10px clamp(16px, 3vw, 40px);
+  font-size: 12px;
+  color: #c4b39a;
+  letter-spacing: 0.01em;
+  text-align: center;
+}
+.footer-copy p { margin: 0; }
 
 @media (max-width: 980px) {
   .seva-grid, .product-grid, .detail, .photo-grid, .contact-layout, .form-2, .fest-card, .fest-overview, .news-grid { grid-template-columns: 1fr 1fr; }
@@ -647,14 +707,17 @@ button, input, select, textarea { font: inherit; }
   .wrap { width: min(1120px, calc(100% - 28px)); }
   .util-address { max-width: 58vw; }
   .menu-btn { display: grid; place-items: center; }
+  .footer-inner { flex-direction: column; gap: 16px; }
+  .footer-brand { max-width: none; }
+  .footer-cols { gap: 28px; }
   .nav {
     display: none;
     flex-direction: column;
     align-items: stretch;
     position: absolute;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 100vw;
+    left: 0;
+    right: 0;
+    width: 100%;
     top: 100%;
     background: #fff;
     padding: 8px 16px 18px;
@@ -672,7 +735,7 @@ button, input, select, textarea { font: inherit; }
   .btn-donate, .btn-hero-ghost { width: 100%; max-width: 280px; text-align: center; }
   .home-fests, .home-news, .home-temple-gallery { padding: 48px 0; }
   .news-head { align-items: flex-start; }
-  .seva-grid, .product-grid, .footer-grid, .detail, .photo-grid, .contact-layout, .form-2, .touch-grid, .fest-card, .fest-overview, .ritual-grid, .quick-grid, .news-grid, .home-g-grid, .event-grid { grid-template-columns: 1fr; }
+  .seva-grid, .product-grid, .detail, .photo-grid, .contact-layout, .form-2, .touch-grid, .fest-card, .fest-overview, .ritual-grid, .quick-grid, .news-grid, .home-g-grid, .event-grid { grid-template-columns: 1fr; }
   .event-grid .fest-tile:last-child { grid-column: auto; }
   .fest-tile { height: 220px; }
   .fest-banner { flex-direction: column; align-items: flex-start; }

@@ -39,7 +39,7 @@ export function Layout() {
         </div>
       </div>
       <header className="main-header">
-        <div className="wrap header-inner">
+        <div className="header-inner">
           <Link className="brand" to="/" onClick={() => setOpen(false)}>
             <img className="logo-img" src={s.logo || "/logo.svg"} alt="" />
             <span>
@@ -74,27 +74,51 @@ export function Layout() {
 }
 
 function FooterInner({ s }) {
+  const copy = s.copyright || `© 2026 ${s.footerTitle || s.siteName || "Banki Mahotsav"}. All rights reserved.`;
+  const title = s.footerTitle || s.siteName || "Banki Mahotsav";
+  const about = s.footerAbout || s.tagline;
+  const address = s.footerAddress || s.address;
+  const phone = s.footerPhone || s.phone;
+  const email = s.footerEmail || s.email;
+  const links = Array.isArray(s.footerLinks) && s.footerLinks.length
+    ? s.footerLinks.filter((l) => l.label && l.path)
+    : [
+      { label: "About", path: "/about" },
+      { label: "Events", path: "/events" },
+      { label: "Books", path: "/books" },
+      { label: "Gallery", path: "/gallery" },
+      { label: "Contact", path: "/contact" },
+    ];
   return (
-    <div className="wrap footer-grid">
-      <div>
-        <h3>{s.siteName}</h3>
-        <p>{s.tagline}</p>
-        <p>{s.address}</p>
+    <>
+      <div className="footer-inner">
+        <div className="footer-brand">
+          <h3>{title}</h3>
+          {about && <p>{about}</p>}
+          {address && <p>{address}</p>}
+        </div>
+        <div className="footer-cols">
+          <div className="footer-nav">
+            <h4>{s.footerLinksTitle || "Quick Links"}</h4>
+            <div className="footer-nav-links">
+              {links.map((l) => (
+                String(l.path).startsWith("http")
+                  ? <a key={`${l.path}-${l.label}`} href={l.path} target="_blank" rel="noreferrer">{l.label}</a>
+                  : <Link key={`${l.path}-${l.label}`} to={l.path}>{l.label}</Link>
+              ))}
+            </div>
+          </div>
+          <div className="footer-contact">
+            <h4>{s.footerContactTitle || "Contact"}</h4>
+            {phone && <a href={`tel:${phone}`}>{phone}</a>}
+            {email && <a href={`mailto:${email}`}>{email}</a>}
+          </div>
+        </div>
       </div>
-      <div>
-        <h4>Quick Links</h4>
-        <Link to="/about">About</Link>
-        <Link to="/events">Events</Link>
-        <Link to="/books">Books</Link>
-        <Link to="/gallery">Gallery</Link>
-        <Link to="/contact">Contact</Link>
+      <div className="footer-copy">
+        <p>{copy}</p>
       </div>
-      <div>
-        <h4>Contact</h4>
-        <a href={`tel:${s.phone}`}>{s.phone}</a>
-        <a href={`mailto:${s.email}`}>{s.email}</a>
-      </div>
-    </div>
+    </>
   );
 }
 

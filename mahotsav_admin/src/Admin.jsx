@@ -60,8 +60,27 @@ export function AdminLogin() {
   const { user, setUser, authReady } = useApp();
   const nav = useNavigate();
   const [form, setForm] = useState({ email: "admin@bankimahotsav.com", password: "admin123" });
+  const [brand, setBrand] = useState(null);
+  useEffect(() => {
+    api("/api/site")
+      .then((d) => setBrand(d.settings || null))
+      .catch(() => setBrand(null));
+  }, []);
+  useEffect(() => {
+    const href = brand?.favicon || brand?.logo || "/favicon.svg";
+    let link = document.querySelector("link[rel='icon']");
+    if (!link) {
+      link = document.createElement("link");
+      link.rel = "icon";
+      document.head.appendChild(link);
+    }
+    link.href = href;
+    document.title = `${brand?.siteName || "Banki Mahotsav"} Admin`;
+  }, [brand]);
   if (!authReady) return <p className="page wrap">Loading…</p>;
   if (user?.role === "admin") return <Navigate to="/" replace />;
+  const logo = brand?.logo || "/logo.svg";
+  const name = brand?.siteName || "Banki Mahotsav";
   return (
     <div className="login-screen">
       <form className="login-card" onSubmit={async (e) => {
@@ -76,11 +95,13 @@ export function AdminLogin() {
           await swalError("Sign in failed", e2.message);
         }
       }}>
-        <p className="login-kicker">Banki Mahotsav</p>
-        <h1>Admin console</h1>
-        <p>Sign in to manage events, books, gallery, and messages.</p>
-        <div className="field"><label>Email</label><input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} /></div>
-        <div className="field"><label>Password</label><input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} /></div>
+        <div className="login-brand">
+          <img className="login-logo" src={logo} alt="" />
+          <p className="login-kicker">{name}</p>
+          <h1>Admin</h1>
+        </div>
+        <div className="field"><label>Email</label><input value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} autoComplete="username" /></div>
+        <div className="field"><label>Password</label><input type="password" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} autoComplete="current-password" /></div>
         <button className="btn-red">Sign in</button>
       </form>
     </div>
@@ -97,33 +118,138 @@ function Guard({ children }) {
 
 export function Dashboard() {
   const { user } = useApp();
-  const [stats, setStats] = useState(null);
-  useEffect(() => { adminApi("/api/admin/stats").then(setStats); }, []);
-  if (!stats) return <p>Loading…</p>;
-  const items = [
-    ["Events", stats.events, "Published on the Events page", "/events"],
-    ["Books", stats.books, "PDFs available to download", "/books"],
-    ["Gallery", stats.gallery, "Photographs on the public site", "/gallery"],
-    ["Messages", stats.messages, "Contact form submissions", "/messages"],
+  const [data, setData] = useState(null);
+  useEffect(() => {
+    Promise.all([
+      adminApi("/api/admin/stats"),
+      adminApi("/api/admin/events"),
+      adminApi("/api/admin/books"),
+      adminApi("/api/admin/gallery"),
+      adminApi("/api/admin/messages"),
+    ]).then(([stats, events, books, gallery, messages]) => {
+      setData({ stats, events, books, gallery, messages });
+    }).catch(() => setData({ stats: { events: 0, books: 0, gallery: 0, messages: 0 }, events: [], books: [], gallery: [], messages: [] }));
+  }, []);
+  if (!data) return <p>Loading…</p>;
+
+  const published = (rows) => (rows || []).filter((r) => r.active !== false).length;
+  const unread = data.messages.filter((m) => !m.read).length;
+  const recent = data.messages.slice(0, 6);
+  const kpis = [
+    { key: "Events", value: data.stats.events, sub: `${published(data.events)} published on the site`, to: "/events", icon: "events", tone: "saffron" },
+    { key: "Books", value: data.stats.books, sub: `${published(data.books)} available to download`, to: "/books", icon: "books", tone: "teal" },
+    { key: "Gallery", value: data.stats.gallery, sub: `${published(data.gallery)} photos visible publicly`, to: "/gallery", icon: "gallery", tone: "gold" },
+    { key: "Messages", value: data.stats.messages, sub: unread ? `${unread} unread ${unread === 1 ? "enquiry" : "enquiries"}` : "Inbox is up to date", to: "/messages", icon: "messages", tone: "maroon" },
   ];
+  const health = [
+    { label: "Events", live: published(data.events), total: data.events.length, tone: "saffron" },
+    { label: "Books", live: published(data.books), total: data.books.length, tone: "teal" },
+    { label: "Gallery", live: published(data.gallery), total: data.gallery.length, tone: "gold" },
+  ];
+  const actions = [
+    { to: "/events", label: "Manage events", icon: "events" },
+    { to: "/books", label: "Manage books", icon: "books" },
+    { to: "/gallery", label: "Update gallery", icon: "gallery" },
+    { to: "/messages", label: "Open inbox", icon: "messages" },
+    { to: "/settings", label: "Site settings", icon: "settings" },
+    { to: "/footer", label: "Edit footer", icon: "footer" },
+  ];
+
+  function when(d) {
+    try {
+      return new Date(d).toLocaleString(undefined, { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" });
+    } catch {
+      return "";
+    }
+  }
+
   return (
-    <>
+    <div className="dash-page">
       <div className="page-head">
         <div>
           <h1>Dashboard</h1>
-          <p>Welcome{user?.name ? `, ${user.name}` : ""}. Overview of content on the public site.</p>
+          <p>Welcome{user?.name ? `, ${user.name}` : ""}. A snapshot of temple website content and enquiries.</p>
         </div>
       </div>
-      <div className="stats">
-        {items.map(([k, v, hint, to]) => (
-          <NavLink className="stat" to={to} key={k}>
-            <span>{k}</span>
-            <b>{v}</b>
-            <em>{hint}</em>
+      <div className="kpi-row">
+        {kpis.map((it) => (
+          <NavLink className={`kpi kpi-${it.tone}`} to={it.to} key={it.key}>
+            <span className="kpi-top">
+              <span className="kpi-label">{it.key}</span>
+              <span className="kpi-ico"><SideIcon name={it.icon} /></span>
+            </span>
+            <b>{it.value}</b>
+            <em>{it.sub}</em>
           </NavLink>
         ))}
       </div>
-    </>
+      <div className="dash-body">
+        <section className="dash-panel">
+          <div className="dash-panel-h">
+            <div>
+              <h2>Recent enquiries</h2>
+              <p>{unread ? `${unread} waiting for a reply` : "Latest messages from the contact form"}</p>
+            </div>
+            <NavLink to="/messages">View all</NavLink>
+          </div>
+          {recent.length === 0 ? (
+            <p className="dash-empty">No messages yet.</p>
+          ) : (
+            <ul className="dash-msgs">
+              {recent.map((m) => (
+                <li key={m.id} className={m.read ? "" : "is-new"}>
+                  <span className="dash-msg-dot" />
+                  <div>
+                    <strong>{m.name || "Visitor"}</strong>
+                    <small>{when(m.createdAt)}</small>
+                    <p>{m.message}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+        <div className="dash-side">
+          <section className="dash-panel">
+            <div className="dash-panel-h">
+              <div>
+                <h2>Published content</h2>
+                <p>What visitors can see on the public site</p>
+              </div>
+            </div>
+            <ul className="dash-health">
+              {health.map((h) => (
+                <li key={h.label}>
+                  <span>
+                    {h.label}
+                    <b>{h.live}/{h.total || 0}</b>
+                  </span>
+                  <i className={`dash-bar dash-bar-${h.tone}`}>
+                    <i style={{ width: `${h.total ? Math.round((h.live / h.total) * 100) : 0}%` }} />
+                  </i>
+                </li>
+              ))}
+            </ul>
+          </section>
+          <section className="dash-panel">
+            <div className="dash-panel-h">
+              <div>
+                <h2>Quick actions</h2>
+                <p>Jump to a section</p>
+              </div>
+            </div>
+            <div className="dash-actions">
+              {actions.map((a) => (
+                <NavLink key={a.to} to={a.to}>
+                  <SideIcon name={a.icon} />
+                  {a.label}
+                </NavLink>
+              ))}
+            </div>
+          </section>
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -245,6 +371,130 @@ function PasswordForm() {
       </div>
       <button className="btn-red" type="submit">Update password</button>
     </form>
+  );
+}
+
+const FOOTER_PAGES = [
+  { label: "Home", path: "/" },
+  { label: "About", path: "/about" },
+  { label: "Events", path: "/events" },
+  { label: "Books", path: "/books" },
+  { label: "Gallery", path: "/gallery" },
+  { label: "Contact", path: "/contact" },
+];
+
+function defaultFooterLinks() {
+  return FOOTER_PAGES.filter((p) => p.path !== "/").map(({ label, path }) => ({ label, path }));
+}
+
+export function FooterSettings() {
+  const [s, setS] = useState(null);
+  useEffect(() => { adminApi("/api/admin/settings").then(setS); }, []);
+  if (!s) return <p>Loading…</p>;
+  const links = Array.isArray(s.footerLinks) && s.footerLinks.length ? s.footerLinks : defaultFooterLinks();
+  function setLinks(next) {
+    setS({ ...s, footerLinks: next });
+  }
+  return (
+    <>
+      <div className="page-head">
+        <div>
+          <h1>Footer</h1>
+          <p>This content appears at the bottom of every public page.</p>
+        </div>
+      </div>
+      <form className="card" onSubmit={async (e) => {
+        e.preventDefault();
+        try {
+          const footerLinks = links.filter((l) => (l.label || "").trim());
+          await adminApi("/api/admin/settings", { method: "PUT", body: JSON.stringify({ ...s, footerLinks }) });
+          await swalSuccess("Footer saved", "The public site will show this footer after a refresh.");
+        } catch (ex) {
+          await swalError("Could not save footer", ex.message);
+        }
+      }}>
+        <div className="settings-grid">
+          <div className="field">
+            <label>Title</label>
+            <input value={s.footerTitle || ""} onChange={(e) => setS({ ...s, footerTitle: e.target.value })} placeholder="Banki Mahotsav" />
+          </div>
+          <div className="field">
+            <label>About text</label>
+            <input value={s.footerAbout || ""} onChange={(e) => setS({ ...s, footerAbout: e.target.value })} placeholder="Maa Charchika · Banki, Odisha" />
+          </div>
+          <div className="field span-2">
+            <label>Address</label>
+            <input value={s.footerAddress || ""} onChange={(e) => setS({ ...s, footerAddress: e.target.value })} placeholder="Charchika Temple Road, Banki" />
+          </div>
+          <div className="field">
+            <label>Links heading</label>
+            <input value={s.footerLinksTitle || ""} onChange={(e) => setS({ ...s, footerLinksTitle: e.target.value })} placeholder="Quick Links" />
+          </div>
+          <div className="field">
+            <label>Contact heading</label>
+            <input value={s.footerContactTitle || ""} onChange={(e) => setS({ ...s, footerContactTitle: e.target.value })} placeholder="Contact" />
+          </div>
+          <div className="field">
+            <label>Phone</label>
+            <input value={s.footerPhone || ""} onChange={(e) => setS({ ...s, footerPhone: e.target.value })} placeholder="+91 9876543210" />
+          </div>
+          <div className="field">
+            <label>Email</label>
+            <input type="email" value={s.footerEmail || ""} onChange={(e) => setS({ ...s, footerEmail: e.target.value })} placeholder="info@bankimahotsav.com" />
+          </div>
+          <div className="field span-2">
+            <label>Quick links</label>
+            <div className="link-editor">
+              {links.map((item, i) => (
+                <div className="link-row" key={i}>
+                  <input
+                    placeholder="Label"
+                    value={item.label || ""}
+                    onChange={(e) => {
+                      const next = links.map((row, idx) => idx === i ? { ...row, label: e.target.value } : row);
+                      setLinks(next);
+                    }}
+                  />
+                  <select
+                    value={FOOTER_PAGES.some((p) => p.path === item.path) ? item.path : "custom"}
+                    onChange={(e) => {
+                      const path = e.target.value === "custom" ? (item.path || "/about") : e.target.value;
+                      const match = FOOTER_PAGES.find((p) => p.path === path);
+                      const next = links.map((row, idx) => idx === i ? { ...row, path, label: row.label || match?.label || "" } : row);
+                      setLinks(next);
+                    }}
+                  >
+                    {FOOTER_PAGES.map((p) => <option key={p.path} value={p.path}>{p.label}</option>)}
+                    <option value="custom">Custom URL</option>
+                  </select>
+                  {!FOOTER_PAGES.some((p) => p.path === item.path) && (
+                    <input
+                      placeholder="/page or https://"
+                      value={item.path || ""}
+                      onChange={(e) => {
+                        const next = links.map((row, idx) => idx === i ? { ...row, path: e.target.value } : row);
+                        setLinks(next);
+                      }}
+                    />
+                  )}
+                  <button type="button" className="danger" onClick={() => setLinks(links.filter((_, idx) => idx !== i))}>Remove</button>
+                </div>
+              ))}
+              <button type="button" className="btn-outline" onClick={() => setLinks([...links, { label: "", path: "/about" }])}>Add link</button>
+            </div>
+          </div>
+          <div className="field span-2">
+            <label>Copyright</label>
+            <input
+              value={s.copyright || ""}
+              onChange={(e) => setS({ ...s, copyright: e.target.value })}
+              placeholder="© 2026 Banki Mahotsav. All rights reserved."
+            />
+          </div>
+        </div>
+        <button className="btn-red">Save footer</button>
+      </form>
+    </>
   );
 }
 
@@ -657,6 +907,7 @@ function SideIcon({ name }) {
     settings: "M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4",
     messages: "M4 6h16v10H7l-3 3V6z",
     about: "M12 3a9 9 0 1 0 .01 0zM12 8h.01M11 12h2v6h-2",
+    footer: "M4 5h16v14H4V5zm0 10h16",
     external: "M10 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-4M14 4h6v6M10 14 20 4",
     logout: "M10 17l-1 0a3 3 0 0 1-3-3V8a3 3 0 0 1 3-3h1M14 12h8m-3-3 3 3-3 3",
   };
@@ -719,6 +970,7 @@ export function AdminApp() {
             <MenuLink to="/gallery"><SideIcon name="gallery" />Gallery</MenuLink>
             <p className="side-label">Manage</p>
             <MenuLink to="/about"><SideIcon name="about" />About</MenuLink>
+            <MenuLink to="/footer"><SideIcon name="footer" />Footer</MenuLink>
             <MenuLink to="/settings"><SideIcon name="settings" />Settings</MenuLink>
             <MenuLink to="/messages"><SideIcon name="messages" />Messages</MenuLink>
           </nav>

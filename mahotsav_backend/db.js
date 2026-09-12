@@ -142,6 +142,15 @@ function mapSettings(row) {
     aboutHill: row.about_hill || "",
     logo: row.logo || "",
     favicon: row.favicon || "",
+    footerAbout: row.footer_about || "",
+    footerTitle: row.footer_title || "",
+    footerAddress: row.footer_address || "",
+    footerPhone: row.footer_phone || "",
+    footerEmail: row.footer_email || "",
+    footerLinksTitle: row.footer_links_title || "",
+    footerContactTitle: row.footer_contact_title || "",
+    footerLinks: json(row.footer_links, []),
+    copyright: row.copyright || "",
     disclaimer: json(row.disclaimer, []),
   };
 }
@@ -170,6 +179,15 @@ function settingsToRow(s) {
     about_hill: s.aboutHill || "",
     logo: s.logo || "",
     favicon: s.favicon || "",
+    footer_about: s.footerAbout || "",
+    footer_title: s.footerTitle || "",
+    footer_address: s.footerAddress || "",
+    footer_phone: s.footerPhone || "",
+    footer_email: s.footerEmail || "",
+    footer_links_title: s.footerLinksTitle || "",
+    footer_contact_title: s.footerContactTitle || "",
+    footer_links: JSON.stringify(s.footerLinks || []),
+    copyright: s.copyright || "",
     disclaimer: JSON.stringify(s.disclaimer || []),
   };
 }
@@ -386,6 +404,15 @@ async function ensureAboutSettingsColumns() {
     logo: "VARCHAR(500)",
     favicon: "VARCHAR(500)",
     contact_email: "VARCHAR(255)",
+    footer_about: "TEXT",
+    footer_title: "VARCHAR(255)",
+    footer_address: "VARCHAR(500)",
+    footer_phone: "VARCHAR(64)",
+    footer_email: "VARCHAR(255)",
+    footer_links_title: "VARCHAR(128)",
+    footer_contact_title: "VARCHAR(128)",
+    footer_links: "JSON",
+    copyright: "VARCHAR(255)",
   };
   const cols = await query("SHOW COLUMNS FROM settings");
   const have = new Set(cols.map((c) => c.Field));
@@ -394,6 +421,25 @@ async function ensureAboutSettingsColumns() {
   }
   await query("UPDATE settings SET logo = COALESCE(NULLIF(logo,''), '/logo.svg'), favicon = COALESCE(NULLIF(favicon,''), '/favicon.svg') WHERE id = 1");
   await query("UPDATE settings SET contact_email = COALESCE(NULLIF(contact_email,''), email) WHERE id = 1");
+  await query("UPDATE settings SET copyright = COALESCE(NULLIF(copyright,''), '© 2026 Banki Mahotsav. All rights reserved.') WHERE id = 1");
+  await query(`UPDATE settings SET
+    footer_title = COALESCE(NULLIF(footer_title,''), site_name),
+    footer_about = COALESCE(NULLIF(footer_about,''), tagline),
+    footer_address = COALESCE(NULLIF(footer_address,''), address),
+    footer_phone = COALESCE(NULLIF(footer_phone,''), phone),
+    footer_email = COALESCE(NULLIF(footer_email,''), email),
+    footer_links_title = COALESCE(NULLIF(footer_links_title,''), 'Quick Links'),
+    footer_contact_title = COALESCE(NULLIF(footer_contact_title,''), 'Contact')
+    WHERE id = 1`);
+  await query(`UPDATE settings SET footer_links = ? WHERE id = 1 AND (footer_links IS NULL OR CAST(footer_links AS CHAR) IN ('', 'null', '[]'))`, [
+    JSON.stringify([
+      { label: "About", path: "/about" },
+      { label: "Events", path: "/events" },
+      { label: "Books", path: "/books" },
+      { label: "Gallery", path: "/gallery" },
+      { label: "Contact", path: "/contact" },
+    ]),
+  ]);
 }
 
 function festivalSeed() {
@@ -568,6 +614,21 @@ function seedPayload() {
       contactEmail: "info@bankimahotsav.com",
       whatsapp: "+91 9876543210",
       address: "Charchika Temple Road, Banki, Cuttack, Odisha 754008",
+      copyright: "© 2026 Banki Mahotsav. All rights reserved.",
+      footerTitle: "Banki Mahotsav",
+      footerAbout: "Maa Charchika · Banki, Odisha",
+      footerAddress: "Charchika Temple Road, Banki, Cuttack, Odisha 754008",
+      footerPhone: "+91 9876543210",
+      footerEmail: "info@bankimahotsav.com",
+      footerLinksTitle: "Quick Links",
+      footerContactTitle: "Contact",
+      footerLinks: [
+        { label: "About", path: "/about" },
+        { label: "Events", path: "/events" },
+        { label: "Books", path: "/books" },
+        { label: "Gallery", path: "/gallery" },
+        { label: "Contact", path: "/contact" },
+      ],
       welcomeTitle: "Welcome to Banki Mahotsav",
       welcomeSubtitle: "Jai Maa Charchika",
       heroImage: "/hero.jpg",
