@@ -105,8 +105,27 @@ app.get("/api/me", auth(), wrap(async (req, res) => {
 
 app.post("/api/contact", wrap(async (req, res) => {
   const { name, email, phone, message } = req.body || {};
-  if (!name || !message) return res.status(400).json({ error: "Name and message required" });
-  await db.insertRow("messages", { id: db.uuid(), name, email: email || "", phone: phone || "", message, read: false, createdAt: db.now() });
+  const nameVal = String(name || "").trim();
+  if (nameVal.length < 2 || nameVal.length > 80 || !/^[\p{L}\p{M}][\p{L}\p{M}\s.'-]{0,79}$/u.test(nameVal)) {
+    return res.status(400).json({ error: "Enter a valid name using letters only" });
+  }
+  if (!message || !String(message).trim()) return res.status(400).json({ error: "Message is required" });
+  if (String(message).trim().length < 10) return res.status(400).json({ error: "Message must be at least 10 characters" });
+  if (String(message).length > 1000) return res.status(400).json({ error: "Message cannot exceed 1000 characters" });
+  const emailVal = String(email || "").trim();
+  if (emailVal.length > 100 || !/^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(emailVal)) {
+    return res.status(400).json({ error: "Enter a valid email address" });
+  }
+  const digits = String(phone || "").replace(/\D/g, "");
+  const ten = digits.length === 12 && digits.startsWith("91")
+    ? digits.slice(2)
+    : digits.length === 11 && digits.startsWith("0")
+      ? digits.slice(1)
+      : digits;
+  if (!/^[6-9]\d{9}$/.test(ten)) {
+    return res.status(400).json({ error: "Enter a valid 10-digit mobile number" });
+  }
+  await db.insertRow("messages", { id: db.uuid(), name: nameVal, email: emailVal, phone: String(phone).trim(), message: String(message).trim(), read: false, createdAt: db.now() });
   const settings = await db.getSettings();
   const to = (settings?.contactEmail || settings?.email || "").trim();
   try {

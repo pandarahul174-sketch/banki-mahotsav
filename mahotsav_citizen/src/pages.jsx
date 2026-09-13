@@ -415,15 +415,72 @@ export function BookDetail() {
   );
 }
 
+const CONTACT_LIMITS = { name: 80, email: 100, phone: 10, message: 1000 };
+
+function isValidName(value) {
+  const v = String(value || "").trim();
+  if (v.length < 2 || v.length > CONTACT_LIMITS.name) return false;
+  if (/\d/.test(v)) return false;
+  return /^[\p{L}\p{M}][\p{L}\p{M}\s.'-]{0,79}$/u.test(v);
+}
+
+function isValidEmail(value) {
+  const v = String(value || "").trim();
+  return v.length <= CONTACT_LIMITS.email && /^[^\s@]+@[^\s@]+\.[A-Za-z]{2,}$/.test(v);
+}
+
+function isValidPhone(value) {
+  const digits = String(value || "").replace(/\D/g, "");
+  const ten = digits.length === 12 && digits.startsWith("91")
+    ? digits.slice(2)
+    : digits.length === 11 && digits.startsWith("0")
+      ? digits.slice(1)
+      : digits;
+  return /^[6-9]\d{9}$/.test(ten);
+}
+
 export function Contact() {
   const { site } = useApp();
   const s = site?.settings || {};
   const [form, setForm] = useState({ name: "", email: "", phone: "", message: "" });
+  const [errors, setErrors] = useState({});
+  const [tried, setTried] = useState(false);
   const [busy, setBusy] = useState(false);
   const address = s.address || "Charchika Temple Road, Banki, Cuttack, Odisha 754008";
   const lat = 20.377257;
   const lng = 85.527682;
   const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lng}`;
+
+  function validateForm(values = form) {
+    const next = {};
+    const name = values.name.trim();
+    if (!name) next.name = "Please enter your full name.";
+    else if (name.length < 2) next.name = "Name must be at least 2 characters.";
+    else if (name.length > CONTACT_LIMITS.name) next.name = `Name cannot exceed ${CONTACT_LIMITS.name} characters.`;
+    else if (!isValidName(name)) next.name = "Enter a valid name using letters only (not numbers).";
+    if (!values.email.trim()) next.email = "Please enter your email address.";
+    else if (values.email.trim().length > CONTACT_LIMITS.email) next.email = `Email cannot exceed ${CONTACT_LIMITS.email} characters.`;
+    else if (!isValidEmail(values.email)) next.email = "Enter a valid email, for example name@gmail.com.";
+    if (!values.phone.trim()) next.phone = "Please enter your mobile number.";
+    else if (!isValidPhone(values.phone)) next.phone = "Enter a valid 10-digit Indian mobile number.";
+    if (!values.message.trim()) next.message = "Please type your message.";
+    else if (values.message.trim().length < 10) next.message = "Message must be at least 10 characters.";
+    else if (values.message.length > CONTACT_LIMITS.message) next.message = `Message cannot exceed ${CONTACT_LIMITS.message} characters.`;
+    return next;
+  }
+
+  function setField(key, raw) {
+    let value = raw;
+    if (key === "name") value = raw.replace(/[0-9]/g, "").slice(0, CONTACT_LIMITS.name);
+    else if (key === "phone") value = raw.replace(/\D/g, "").slice(0, CONTACT_LIMITS.phone);
+    else value = raw.slice(0, CONTACT_LIMITS[key] || raw.length);
+    const nextForm = { ...form, [key]: value };
+    setForm(nextForm);
+    const all = validateForm(nextForm);
+    if (tried) setErrors(all);
+    else if (nextForm[key].trim() && all[key]) setErrors((prev) => ({ ...prev, [key]: all[key] }));
+    else setErrors((prev) => ({ ...prev, [key]: "" }));
+  }
 
   return (
     <>
@@ -463,13 +520,20 @@ export function Contact() {
               </article>
             </div>
           </div>
-          <form className={`message-card${busy ? " is-busy" : ""}`} onSubmit={async (e) => {
+          <form className={`message-card${busy ? " is-busy" : ""}`} noValidate onSubmit={async (e) => {
             e.preventDefault();
+            e.stopPropagation();
             if (busy) return;
+            setTried(true);
+            const next = validateForm();
+            setErrors(next);
+            if (Object.keys(next).length) return;
             setBusy(true);
             try {
               await api("/api/contact", { method: "POST", body: JSON.stringify(form) });
               setForm({ name: "", email: "", phone: "", message: "" });
+              setTried(false);
+              setErrors({});
               await swalSuccess("Message sent", "Thank you. The temple office will get back to you.");
             } catch (e2) {
               await swalError("Could not send message", e2.message);
@@ -486,21 +550,43 @@ export function Contact() {
             <h2>Send Us a Message</h2>
             <div className="form-2">
               <div className="field">
-                <label>Full Name *</label>
-                <input placeholder="Enter your name" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} required disabled={busy} />
+                <label htmlFor="contact-name">Full Name *</label>
+                <input id="contact-name" name="name" autoComplete="name" maxLength={CONTACT_LIMITS.name} placeholder="Enter your full name" value={form.name} onChange={(e) => setField("name", e.target.value)} disabled={busy} aria-invalid={!!errors.name} />
+                {errors.name && <small className="field-error">{errors.name}</small>}
               </div>
               <div className="field">
-                <label>Email Address *</label>
-                <input type="email" placeholder="Enter your email" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} required disabled={busy} />
+                <label htmlFor="contact-email">Email Address *</label>
+                <input id="contact-email" name="email" type="text" inputMode="email" autoComplete="email" maxLength={CONTACT_LIMITS.email} placeholder="name@gmail.com" value={form.email} onChange={(e) => setField("email", e.target.value)} disabled={busy} aria-invalid={!!errors.email} />
+                {errors.email && <small className="field-error">{errors.email}</small>}
               </div>
             </div>
             <div className="field">
-              <label>Phone Number</label>
-              <input placeholder="Enter your phone" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} disabled={busy} />
+              <label htmlFor="contact-phone">Phone Number *</label>
+              <input
+                id="contact-phone"
+                name="phone"
+                type="tel"
+                inputMode="numeric"
+                autoComplete="off"
+                maxLength={10}
+                placeholder="10-digit mobile number"
+                value={form.phone}
+                onChange={(e) => setField("phone", e.target.value)}
+                onInput={(e) => setField("phone", e.currentTarget.value)}
+                onPaste={(e) => {
+                  e.preventDefault();
+                  setField("phone", (e.clipboardData.getData("text") || "").replace(/\D/g, "").slice(0, 10));
+                }}
+                disabled={busy}
+                aria-invalid={!!errors.phone}
+              />
+              {errors.phone && <small className="field-error">{errors.phone}</small>}
             </div>
             <div className="field">
-              <label>Message *</label>
-              <textarea rows={6} placeholder="Type your message here..." value={form.message} onChange={(e) => setForm({ ...form, message: e.target.value })} required disabled={busy} />
+              <label htmlFor="contact-message">Message *</label>
+              <textarea id="contact-message" name="message" rows={6} maxLength={CONTACT_LIMITS.message} placeholder="Type your message here..." value={form.message} onChange={(e) => setField("message", e.target.value)} disabled={busy} aria-invalid={!!errors.message} />
+              <small className="field-hint">{form.message.length}/{CONTACT_LIMITS.message}</small>
+              {errors.message && <small className="field-error">{errors.message}</small>}
             </div>
             <button className="btn-send" type="submit" disabled={busy}>
               {busy ? "Sending…" : "Send Message"}

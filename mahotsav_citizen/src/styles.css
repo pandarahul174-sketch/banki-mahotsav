@@ -391,6 +391,15 @@ button, input, select, textarea { font: inherit; }
 .stars { color: #e6a817; }
 .field { display: grid; gap: 6px; margin-bottom: 8px; }
 .field input, .field textarea, .field select { border: 1px solid #e6e6e6; border-radius: 8px; padding: 10px 12px; width: 100%; }
+.field input[aria-invalid="true"], .field textarea[aria-invalid="true"] { border-color: #b42318; background: #fff8f7; }
+.field-error {
+  color: #b42318;
+  font-size: 12px;
+  font-weight: 600;
+  display: block;
+  margin-top: 2px;
+}
+.field-hint { color: var(--muted); font-size: 12px; }
 .section-title { font-family: "Playfair Display", serif; }
 .linkish { background: none; border: 0; color: var(--orange); font-weight: 700; cursor: pointer; }
 .btn-outline { background: #fff; border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px; cursor: pointer; font-weight: 600; }
