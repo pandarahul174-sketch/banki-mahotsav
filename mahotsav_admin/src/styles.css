@@ -530,7 +530,20 @@ h1, h2, h3 {
   font-weight: 650;
 }
 .table tr:last-child td { border-bottom: 0; }
-.table tbody tr:hover { background: #fbf9f6; }
+.order-no {
+  width: 72px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font-weight: 700;
+  color: var(--maroon-deep);
+  background: #faf8f5;
+}
+.order-no:focus {
+  outline: 2px solid rgba(107, 18, 40, 0.18);
+  border-color: var(--maroon);
+  background: #fff;
+}
 .row-actions { display: flex; gap: 6px; white-space: nowrap; }
 .admin-thumb { width: 64px; height: 46px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); }
 .admin-thumb-lg { width: 100%; max-height: 180px; object-fit: cover; border-radius: 10px; margin-bottom: 8px; }

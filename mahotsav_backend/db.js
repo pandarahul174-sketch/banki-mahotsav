@@ -76,7 +76,8 @@ CREATE TABLE IF NOT EXISTS events (
   rituals TEXT,
   cta VARCHAR(128),
   featured TINYINT(1) DEFAULT 0,
-  active TINYINT(1) DEFAULT 1
+  active TINYINT(1) DEFAULT 1,
+  sort_order INT DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS books (
@@ -95,7 +96,8 @@ CREATE TABLE IF NOT EXISTS books (
   pdf VARCHAR(500),
   highlights TEXT,
   featured TINYINT(1) DEFAULT 0,
-  active TINYINT(1) DEFAULT 1
+  active TINYINT(1) DEFAULT 1,
+  sort_order INT DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS gallery (
@@ -210,6 +212,7 @@ const MAPS = {
     highlights: r.highlights || "",
     featured: bool(r.featured),
     active: r.active == null ? true : bool(r.active),
+    order: r.sort_order == null ? 0 : Number(r.sort_order),
   }),
   events: (r) => ({
     id: r.id,
@@ -230,6 +233,7 @@ const MAPS = {
     cta: r.cta,
     featured: bool(r.featured),
     active: r.active == null ? true : bool(r.active),
+    order: r.sort_order == null ? 0 : Number(r.sort_order),
   }),
   gallery: (r) => ({
     id: r.id,
@@ -368,11 +372,20 @@ async function ensureEventColumns() {
     location: "VARCHAR(255)",
     highlights: "TEXT",
     rituals: "TEXT",
+    sort_order: "INT DEFAULT 0",
   };
   const cols = await query("SHOW COLUMNS FROM events");
   const have = new Set(cols.map((c) => c.Field));
   for (const [name, def] of Object.entries(needed)) {
     if (!have.has(name)) await query(`ALTER TABLE events ADD COLUMN \`${name}\` ${def}`);
+  }
+  const rows = await query("SELECT id, sort_order FROM events ORDER BY sort_order ASC, title ASC");
+  if (rows.length && rows.every((r) => Number(r.sort_order) === 0)) {
+    let i = 1;
+    for (const row of rows) {
+      await query("UPDATE events SET sort_order = ? WHERE id = ?", [i, row.id]);
+      i += 1;
+    }
   }
 }
 
@@ -380,6 +393,15 @@ async function ensureBookColumns() {
   const cols = await query("SHOW COLUMNS FROM books");
   const have = new Set(cols.map((c) => c.Field));
   if (!have.has("pdf")) await query("ALTER TABLE books ADD COLUMN `pdf` VARCHAR(500)");
+  if (!have.has("sort_order")) await query("ALTER TABLE books ADD COLUMN `sort_order` INT DEFAULT 0");
+  const rows = await query("SELECT id, sort_order FROM books ORDER BY sort_order ASC, title ASC");
+  if (rows.length && rows.every((r) => Number(r.sort_order) === 0)) {
+    let i = 1;
+    for (const row of rows) {
+      await query("UPDATE books SET sort_order = ? WHERE id = ?", [i, row.id]);
+      i += 1;
+    }
+  }
 }
 
 async function ensureActiveColumns() {

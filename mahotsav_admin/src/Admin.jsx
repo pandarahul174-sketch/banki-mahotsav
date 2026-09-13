@@ -9,6 +9,7 @@ function adminApi(path, opts) {
 }
 
 function prettyLabel(key) {
+  if (key === "order") return "Order no";
   return key
     .replace(/([A-Z])/g, " $1")
     .replace(/^./, (s) => s.toUpperCase());
@@ -560,7 +561,12 @@ function Crud({ col, fields, title, selects = {}, defaults = {}, hint }) {
   const [rows, setRows] = useState([]);
   const [edit, setEdit] = useState(null);
   async function load() {
-    setRows(await adminApi(`/api/admin/${col}`));
+    const data = await adminApi(`/api/admin/${col}`);
+    const list = Array.isArray(data) ? [...data] : [];
+    if (fields.includes("order")) {
+      list.sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+    }
+    setRows(list);
   }
   useEffect(() => { load(); }, [col]);
 
@@ -601,6 +607,17 @@ function Crud({ col, fields, title, selects = {}, defaults = {}, hint }) {
     }
   }
 
+  async function saveOrder(row, value) {
+    const n = Number(value);
+    if (!Number.isFinite(n)) return;
+    try {
+      await adminApi(`/api/admin/${col}/${row.id}`, { method: "PUT", body: JSON.stringify({ ...row, order: n }) });
+      await load();
+    } catch (ex) {
+      await swalError("Could not update order", ex.message);
+    }
+  }
+
   return (
     <>
       <div className="page-head">
@@ -622,6 +639,16 @@ function Crud({ col, fields, title, selects = {}, defaults = {}, hint }) {
                       <button type="button" className="img-preview-btn" onClick={() => swalImage(r[f], r.title)} aria-label="View image">
                         <img src={r[f]} alt={r.title || ""} className="admin-thumb" />
                       </button>
+                    ) : f === "order" ? (
+                      <input
+                        className="order-no"
+                        type="number"
+                        min="1"
+                        value={r.order ?? ""}
+                        onChange={(e) => setRows((prev) => prev.map((x) => x.id === r.id ? { ...x, order: e.target.value === "" ? "" : Number(e.target.value) } : x))}
+                        onBlur={(e) => saveOrder(r, e.target.value)}
+                        onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
+                      />
                     ) : String(r[f] ?? "").slice(0, 48)}
                   </td>
                 ))}
@@ -706,6 +733,8 @@ function Crud({ col, fields, title, selects = {}, defaults = {}, hint }) {
                         <option value="true">Yes</option>
                         <option value="false">No</option>
                       </select>
+                    ) : f === "order" ? (
+                      <input type="number" min="1" value={edit[f] ?? ""} onChange={(e) => setEdit({ ...edit, order: e.target.value === "" ? "" : Number(e.target.value) })} />
                     ) : selects[f] ? (
                       <select value={edit[f] || selects[f][0]} onChange={(e) => setEdit({ ...edit, [f]: e.target.value })}>
                         {selects[f].map((opt) => <option key={opt} value={opt}>{opt}</option>)}
@@ -748,9 +777,9 @@ export function EventsPage() {
     <Crud
       col="events"
       title="Events"
-      fields={["title", "slug", "image", "excerpt", "body", "timing", "duration", "footfall", "location", "highlights", "rituals", "startsAt", "endsAt", "cta", "featured", "active"]}
-      defaults={{ title: "", slug: "", image: "", excerpt: "", body: "", timing: "", duration: "", footfall: "", location: "", highlights: "", rituals: "", startsAt: "", endsAt: "", cta: "Learn More", featured: true, active: true }}
-      hint="Inactive events stay in admin but are hidden on the public site."
+      fields={["order", "title", "slug", "image", "excerpt", "body", "timing", "duration", "footfall", "location", "highlights", "rituals", "startsAt", "endsAt", "cta", "featured", "active"]}
+      defaults={{ order: "", title: "", slug: "", image: "", excerpt: "", body: "", timing: "", duration: "", footfall: "", location: "", highlights: "", rituals: "", startsAt: "", endsAt: "", cta: "Learn More", featured: true, active: true }}
+      hint="Inactive events stay in admin but are hidden on the public site. Lower order no appears first."
     />
   );
 }
@@ -760,10 +789,10 @@ export function BooksPage() {
     <Crud
       col="books"
       title="Books"
-      fields={["title", "slug", "image", "pdf", "author", "publisher", "publishedYear", "language", "category", "pages", "excerpt", "body", "highlights", "featured", "active"]}
+      fields={["order", "title", "slug", "image", "pdf", "author", "publisher", "publishedYear", "language", "category", "pages", "excerpt", "body", "highlights", "featured", "active"]}
       selects={{ category: ["Devotional", "Literature", "History", "Folk arts"] }}
-      defaults={{ title: "", slug: "", image: "", pdf: "", author: "", publisher: "", publishedYear: "", language: "Odia", category: "Literature", pages: "", excerpt: "", body: "", highlights: "", featured: true, active: true }}
-      hint="Inactive books stay in admin but are hidden on the public site."
+      defaults={{ order: "", title: "", slug: "", image: "", pdf: "", author: "", publisher: "", publishedYear: "", language: "Odia", category: "Literature", pages: "", excerpt: "", body: "", highlights: "", featured: true, active: true }}
+      hint="Inactive books stay in admin but are hidden on the public site. Lower order no appears first."
     />
   );
 }
@@ -773,7 +802,7 @@ export function GalleryPage() {
     <Crud
       col="gallery"
       title="Gallery"
-      fields={["title", "category", "image", "order", "active"]}
+      fields={["order", "title", "category", "image", "active"]}
       selects={{ category: ["Temple", "Festivals", "Deities", "Events"] }}
       defaults={{ title: "", category: "Temple", image: "", order: 0, active: true }}
       hint="Inactive photos stay in admin but are hidden on the public Gallery page."

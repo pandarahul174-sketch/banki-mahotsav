@@ -208,7 +208,7 @@ export function About() {
 
 export function Events() {
   const { site } = useApp();
-  const events = [...(site?.events || [])].sort((a, b) => Number(b.featured) - Number(a.featured));
+  const events = [...(site?.events || [])].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
   return (
     <>
       <section className="page-banner">
@@ -306,7 +306,7 @@ export function EventDetail() {
 
 export function Books() {
   const { site } = useApp();
-  const books = [...(site?.books || [])].sort((a, b) => Number(b.featured) - Number(a.featured));
+  const books = [...(site?.books || [])].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
   return (
     <>
       <section className="page-banner">

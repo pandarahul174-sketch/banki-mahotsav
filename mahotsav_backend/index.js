@@ -76,9 +76,9 @@ function publicOnly(rows) {
 app.get("/api/site", wrap(async (_req, res) => {
   const [settings, events, gallery, books] = await Promise.all([
     db.getSettings(),
-    db.list("events"),
+    db.list("events", "ORDER BY sort_order ASC, title ASC"),
     db.list("gallery", "ORDER BY sort_order ASC"),
-    db.list("books"),
+    db.list("books", "ORDER BY sort_order ASC, title ASC"),
   ]);
   res.json({ settings, events: publicOnly(events), gallery: publicOnly(gallery), books: publicOnly(books) });
 }));
@@ -161,7 +161,7 @@ app.get("/api/admin/:col", auth("admin"), wrap(async (req, res) => {
   }
   if (!collections.includes(col)) return res.status(404).json({ error: "Unknown collection" });
   let extra = "";
-  if (col === "gallery") extra = "ORDER BY sort_order ASC";
+  if (col === "gallery" || col === "events" || col === "books") extra = "ORDER BY sort_order ASC, title ASC";
   else if (col === "messages") extra = "ORDER BY created_at DESC";
   res.json(await db.list(col, extra));
 }));
@@ -196,6 +196,11 @@ app.post("/api/admin/:col", auth("admin"), wrap(async (req, res) => {
   const item = { ...req.body, id: db.uuid() };
   if (!item.slug && item.title) item.slug = slugify(item.title);
   if (col === "messages" && !item.createdAt) item.createdAt = db.now();
+  if ((col === "events" || col === "gallery" || col === "books") && (item.order == null || item.order === "")) {
+    const table = col === "gallery" ? "gallery" : col === "books" ? "books" : "events";
+    const [{ n }] = await db.query(`SELECT COALESCE(MAX(sort_order), 0) AS n FROM \`${table}\``);
+    item.order = Number(n) + 1;
+  }
   await db.insertRow(col, item);
   const saved = await db.findBy(col, "id", item.id);
   res.json(saved);
