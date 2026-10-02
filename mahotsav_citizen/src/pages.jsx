@@ -1,9 +1,77 @@
 ﻿import { Link, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { api } from "./api";
 import { useApp } from "./store";
 import { PageHero } from "./Layout";
 import { swalError, swalSuccess } from "./swal";
+
+function pad2(n) {
+  return String(n).padStart(2, "0");
+}
+
+function eventStartMs(ev) {
+  const raw = ev?.startsAt;
+  if (!raw) return null;
+  const s = String(raw).trim();
+  const iso = /^\d{4}-\d{2}-\d{2}/.test(s) ? (/T|\s/.test(s) ? s : `${s.slice(0, 10)}T00:00:00`) : s;
+  const t = new Date(iso.length === 16 ? `${iso}:00` : iso).getTime();
+  return Number.isFinite(t) && new Date(t).getFullYear() >= 2000 ? t : null;
+}
+
+function timeLeft(target) {
+  const diff = target - Date.now();
+  if (diff <= 0) return null;
+  const sec = Math.floor(diff / 1000);
+  return {
+    days: Math.floor(sec / 86400),
+    hours: Math.floor((sec % 86400) / 3600),
+    minutes: Math.floor((sec % 3600) / 60),
+    seconds: sec % 60,
+  };
+}
+
+function EventCountdown({ events }) {
+  const primary = (events || []).find((e) => e.primary) || null;
+  const target = eventStartMs(primary);
+  const [parts, setParts] = useState(() => (target ? timeLeft(target) : null));
+
+  useEffect(() => {
+    if (!target) {
+      setParts(null);
+      return undefined;
+    }
+    function tick() {
+      setParts(timeLeft(target));
+    }
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [target]);
+
+  if (!primary || !parts) return null;
+  const units = [
+    [parts.days, "Days"],
+    [parts.hours, "Hr"],
+    [parts.minutes, "Min"],
+    [parts.seconds, "Sec"],
+  ];
+  return (
+    <div className="event-timer">
+      <p className="event-timer-kicker">Event starts on</p>
+      <div className="event-timer-units">
+        {units.map(([n, label], i) => (
+          <Fragment key={label}>
+            {i > 0 && <span className="event-timer-colon" aria-hidden="true">:</span>}
+            <div className="event-timer-box">
+              <strong>{pad2(n)}</strong>
+              <span>{label}</span>
+            </div>
+          </Fragment>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 function TempleMap() {
   useEffect(() => {
@@ -47,6 +115,16 @@ function TempleMap() {
   return <div id="temple-map" className="temple-map" />;
 }
 
+function initials(name) {
+  return String(name || "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join("")
+    .toUpperCase();
+}
+
 function chips(value) {
   if (Array.isArray(value)) return value.map(String).map((s) => s.trim()).filter(Boolean);
   return String(value || "").split(/[,|\n]/).map((s) => s.trim()).filter(Boolean);
@@ -67,6 +145,17 @@ function RichText({ html }) {
 
 export function Home() {
   const { site } = useApp();
+  const [memberOpen, setMemberOpen] = useState(null);
+
+  useEffect(() => {
+    if (!memberOpen) return undefined;
+    function onKey(e) {
+      if (e.key === "Escape") setMemberOpen(null);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [memberOpen]);
+
   if (!site) return <div className="wrap page">Loading...</div>;
   const s = site.settings || {};
   const hero = s.heroImage || "/hero.jpg";
@@ -83,6 +172,7 @@ export function Home() {
           <p className="hero-desc">
             {s.aboutLead || "The shrine on Ruchika Parvata honours Maa Charchika, the eight-armed goddess of Banki. Join the Mahotsav, events, and living traditions of this sacred hill."}
           </p>
+          <EventCountdown events={site.events} />
           <div className="hero-chips">
             <span>Darshan {hours}</span>
             <span>{s.address || "Banki, Cuttack, Odisha"}</span>
@@ -96,8 +186,7 @@ export function Home() {
 
       <section className="home-fests">
         <div className="wrap">
-          <p className="eyebrow light">Calendar</p>
-          <h2>Events</h2>
+          <h2>Upcoming Event</h2>
           <p className="home-fests-lead">Celebrations and gatherings throughout the year at Charchika Temple</p>
           <div className="event-grid">
             {[...site.events].filter((ev) => ev.image).sort((a, b) => Number(b.featured) - Number(a.featured)).slice(0, 3).map((ev) => (
@@ -156,6 +245,40 @@ export function Home() {
           ))}
         </div>
       </section>
+      {!!(site.members || []).length && (
+        <section className="home-members">
+          <div className="wrap members-wrap">
+            <h2>Our Members</h2>
+            <div className="member-grid">
+              {[...(site.members || [])].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0)).map((m) => (
+                <article className="member-card" key={m.id}>
+                  {m.image ? (
+                    <button type="button" className="member-photo" onClick={() => setMemberOpen(m)} aria-label={`View photo of ${m.name}`}>
+                      <img src={m.image} alt={m.name} />
+                    </button>
+                  ) : (
+                    <div className="member-avatar" aria-hidden="true">{initials(m.name)}</div>
+                  )}
+                  <h3>{m.name}</h3>
+                  <p>{m.designation}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+      {memberOpen?.image && (
+        <div className="lightbox" onClick={() => setMemberOpen(null)} role="dialog" aria-modal="true" aria-label={memberOpen.name}>
+          <button type="button" className="lightbox-close" onClick={() => setMemberOpen(null)} aria-label="Close">×</button>
+          <figure className="lightbox-fig member-lightbox-fig" onClick={(e) => e.stopPropagation()}>
+            <img src={memberOpen.image} alt={memberOpen.name} />
+            <figcaption>
+              {memberOpen.name}
+              {memberOpen.designation ? ` · ${memberOpen.designation}` : ""}
+            </figcaption>
+          </figure>
+        </div>
+      )}
     </>
   );
 }

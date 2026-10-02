@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Sep 13, 2026 at 10:11 PM
+-- Generation Time: Oct 02, 2026 at 02:25 PM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.1.25
 
@@ -67,8 +67,8 @@ CREATE TABLE `events` (
   `id` varchar(64) NOT NULL,
   `slug` varchar(191) DEFAULT NULL,
   `title` varchar(255) DEFAULT NULL,
-  `starts_at` date DEFAULT NULL,
-  `ends_at` date DEFAULT NULL,
+  `starts_at` datetime DEFAULT NULL,
+  `ends_at` datetime DEFAULT NULL,
   `description` text DEFAULT NULL,
   `cta` varchar(128) DEFAULT NULL,
   `featured` tinyint(1) DEFAULT 0,
@@ -82,18 +82,19 @@ CREATE TABLE `events` (
   `highlights` text DEFAULT NULL,
   `rituals` text DEFAULT NULL,
   `active` tinyint(1) DEFAULT 1,
-  `sort_order` int(11) DEFAULT 0
+  `sort_order` int(11) DEFAULT 0,
+  `is_primary` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `events`
 --
 
-INSERT INTO `events` (`id`, `slug`, `title`, `starts_at`, `ends_at`, `description`, `cta`, `featured`, `excerpt`, `body`, `image`, `timing`, `duration`, `footfall`, `location`, `highlights`, `rituals`, `active`, `sort_order`) VALUES
-('015639a5-6a4b-49b7-8c75-c2bb8609098b', 'banki-mahotsav', 'Banki Mahotsav', '0000-00-00', '0000-00-00', 'The cultural and spiritual gathering of Banki, with Charchika puja, folk arts, literature, and community seva.', 'Send Puja', 1, 'Banki Mahotsav brings artistes, writers, and devotees together around Maa Charchika — cultural nights, crafts, and festival puja at Ruchika Parvata.', 'Banki Mahotsav is the living festival of Banki, Odisha. Stages host Odissi, pala, sankirtan, and local crafts while the Charchika shrine remains the spiritual heart of the town.\n\nFamilies travel from across Cuttack district for darshan, prasad, and night-long kirtan. The Mahotsav also honours Odia literature and social harmony through Charchika Samman and community programmes.\n\nIf you cannot attend in person, you may still book puja and offerings through this portal.', 'https://images.pexels.com/photos/10931719/pexels-photo-10931719.jpeg?auto=compress&cs=tinysrgb&w=1200', 'January (Magha)', '4–5 days', 'Thousands daily', 'Banki, Cuttack, Odisha', 'Charchika puja, Cultural nights, Folk arts, Community seva', 'Charchika special puja\nEvening deepa seva\nSankirtan and pala\nPrasad distribution', 0, 1),
-('6c3a8a74-b8a7-4b1e-ba81-69d262b52739', 'chaitra-jatra', 'Chaitra Jatra', '0000-00-00', '0000-00-00', 'Chaitra month celebration at Charchika Temple with special pujas, cultural programmes, and large gatherings of devotees.', 'Learn More', 1, 'The most important seasonal festival at Charchika Temple, held in Chaitra (March–April), with special pujas, cultural programmes, and grand meals.', 'Chaitra Jatra is among the most significant annual observances at Maa Charchika Temple. During the Odia month of Chaitra, devotees gather on Ruchika Parvata for special anjali, cultural programmes, and community bhog.\n\nThe temple extends its hours on peak days to welcome pilgrims. Families offer flowers, sindoor, and vows, believing the goddess grants protection and fulfilment of sincere wishes.\n\nBanki Mahotsav committee and local seva groups support crowd arrangements, prasad, and night-long kirtan through the fortnight.', 'https://images.pexels.com/photos/37862812/pexels-photo-37862812.jpeg?auto=compress&cs=tinysrgb&w=1200', 'March–April (Chaitra month)', '15–21 days', '80,000+ daily', 'Charchika Temple, Banki', 'Mass tonsure ceremony, Special pujas and rituals, Cultural programmes, Grand feast (maha)', 'Chaitra special puja\nMundan / tonsure seva\nPushpanjali and deepa\nCommunity maha prasad', 0, 4),
-('9db04107-d02c-4df2-ac00-893adbaa26ae', 'banki-mahotsav-2026', 'Banki Mahotsav 2026', '0000-00-00', '0000-00-00', 'Join the next Banki Mahotsav — cultural nights, Charchika puja, crafts, and community gatherings. Send puja if you cannot attend in person.', 'Send Puja', 1, 'Join the next Banki Mahotsav — cultural nights, Charchika puja, crafts, and community gatherings. Send puja if you cannot attend in person.', 'Join the next Banki Mahotsav — cultural nights, Charchika puja, crafts, and community gatherings. Send puja if you cannot attend in person.', NULL, '', '', '', '', '', '', 1, 5),
-('d5430a64-2bfd-4705-9f7e-c671255f128d', 'durga-puja', 'Durga Puja at Charchika', '0000-00-00', '0000-00-00', 'Sharadiya Durga Puja at the Charchika shrine with navratri rituals, sandhya aarti, and festive gatherings.', 'Book Puja', 0, 'Sharadiya Navratri at Charchika Temple — nine nights of aarti, cultural programmes, and Ashtami-Navami special puja.', 'During Sharadiya Durga Puja, Charchika Temple becomes the centre of Navratri worship in Banki. The eight-armed goddess is honoured with daily sandhya aarti, special Ashtami and Navami pujas, and cultural evenings.\n\nDevotees offer sarees, bhog, and anjali. The hill shrine and the town below fill with lamps, pala, and family gatherings.\n\nBook a puja in advance if you wish the sankalp to be performed in your name during the festival days.', 'https://images.pexels.com/photos/5458388/pexels-photo-5458388.jpeg?auto=compress&cs=tinysrgb&w=1200', 'September–October (Ashwina)', '9–10 days', 'Large festive crowds', 'Charchika Temple, Banki', 'Navratri aarti, Ashtami-Navami puja, Cultural evenings, Saree offering', 'Daily sandhya aarti\nAshtami special puja\nNavami hawan\nVijaya dashami visarjan prayers', 1, 3);
+INSERT INTO `events` (`id`, `slug`, `title`, `starts_at`, `ends_at`, `description`, `cta`, `featured`, `excerpt`, `body`, `image`, `timing`, `duration`, `footfall`, `location`, `highlights`, `rituals`, `active`, `sort_order`, `is_primary`) VALUES
+('015639a5-6a4b-49b7-8c75-c2bb8609098b', 'banki-mahotsav', 'Banki Mahotsav', '2026-10-08 20:28:00', '2026-10-22 20:28:00', 'The cultural and spiritual gathering of Banki, with Charchika puja, folk arts, literature, and community seva.', 'Send Puja', 1, 'Banki Mahotsav brings artistes, writers, and devotees together around Maa Charchika — cultural nights, crafts, and festival puja at Ruchika Parvata.', 'Banki Mahotsav is the living festival of Banki, Odisha. Stages host Odissi, pala, sankirtan, and local crafts while the Charchika shrine remains the spiritual heart of the town.\n\nFamilies travel from across Cuttack district for darshan, prasad, and night-long kirtan. The Mahotsav also honours Odia literature and social harmony through Charchika Samman and community programmes.\n\nIf you cannot attend in person, you may still book puja and offerings through this portal.', 'https://images.pexels.com/photos/10931719/pexels-photo-10931719.jpeg?auto=compress&cs=tinysrgb&w=1200', 'January (Magha)', '4–5 days', 'Thousands daily', 'Banki, Cuttack, Odisha', 'Charchika puja, Cultural nights, Folk arts, Community seva', 'Charchika special puja\nEvening deepa seva\nSankirtan and pala\nPrasad distribution', 1, 1, 1),
+('6c3a8a74-b8a7-4b1e-ba81-69d262b52739', 'chaitra-jatra', 'Chaitra Jatra', NULL, NULL, 'Chaitra month celebration at Charchika Temple with special pujas, cultural programmes, and large gatherings of devotees.', 'Learn More', 1, 'The most important seasonal festival at Charchika Temple, held in Chaitra (March–April), with special pujas, cultural programmes, and grand meals.', 'Chaitra Jatra is among the most significant annual observances at Maa Charchika Temple. During the Odia month of Chaitra, devotees gather on Ruchika Parvata for special anjali, cultural programmes, and community bhog.\n\nThe temple extends its hours on peak days to welcome pilgrims. Families offer flowers, sindoor, and vows, believing the goddess grants protection and fulfilment of sincere wishes.\n\nBanki Mahotsav committee and local seva groups support crowd arrangements, prasad, and night-long kirtan through the fortnight.', 'https://images.pexels.com/photos/37862812/pexels-photo-37862812.jpeg?auto=compress&cs=tinysrgb&w=1200', 'March–April (Chaitra month)', '15–21 days', '80,000+ daily', 'Charchika Temple, Banki', 'Mass tonsure ceremony, Special pujas and rituals, Cultural programmes, Grand feast (maha)', 'Chaitra special puja\nMundan / tonsure seva\nPushpanjali and deepa\nCommunity maha prasad', 1, 4, 0),
+('9db04107-d02c-4df2-ac00-893adbaa26ae', 'banki-mahotsav-2026', 'Banki Mahotsav 2026', NULL, NULL, 'Join the next Banki Mahotsav — cultural nights, Charchika puja, crafts, and community gatherings. Send puja if you cannot attend in person.', 'Send Puja', 1, 'Join the next Banki Mahotsav — cultural nights, Charchika puja, crafts, and community gatherings. Send puja if you cannot attend in person.', 'Join the next Banki Mahotsav — cultural nights, Charchika puja, crafts, and community gatherings. Send puja if you cannot attend in person.', NULL, '', '', '', '', '', '', 1, 5, 0),
+('d5430a64-2bfd-4705-9f7e-c671255f128d', 'durga-puja', 'Durga Puja at Charchika', NULL, NULL, 'Sharadiya Durga Puja at the Charchika shrine with navratri rituals, sandhya aarti, and festive gatherings.', 'Book Puja', 0, 'Sharadiya Navratri at Charchika Temple — nine nights of aarti, cultural programmes, and Ashtami-Navami special puja.', 'During Sharadiya Durga Puja, Charchika Temple becomes the centre of Navratri worship in Banki. The eight-armed goddess is honoured with daily sandhya aarti, special Ashtami and Navami pujas, and cultural evenings.\n\nDevotees offer sarees, bhog, and anjali. The hill shrine and the town below fill with lamps, pala, and family gatherings.\n\nBook a puja in advance if you wish the sankalp to be performed in your name during the festival days.', 'https://images.pexels.com/photos/5458388/pexels-photo-5458388.jpeg?auto=compress&cs=tinysrgb&w=1200', 'September–October (Ashwina)', '9–10 days', 'Large festive crowds', 'Charchika Temple, Banki', 'Navratri aarti, Ashtami-Navami puja, Cultural evenings, Saree offering', 'Daily sandhya aarti\nAshtami special puja\nNavami hawan\nVijaya dashami visarjan prayers', 1, 3, 0);
 
 -- --------------------------------------------------------
 
@@ -123,6 +124,31 @@ INSERT INTO `gallery` (`id`, `title`, `category`, `image`, `sort_order`, `active
 ('b31085e7-2858-4209-a834-2b6f2c85fad1', 'Stone Archway', 'Temple', 'https://images.pexels.com/photos/1603650/pexels-photo-1603650.jpeg?auto=compress&cs=tinysrgb&w=900', 3, 0),
 ('b9e993e7-712b-4e39-92ff-fb6b1a440331', 'Maa Charchika Altar', 'Deities', 'https://images.pexels.com/photos/1624496/pexels-photo-1624496.jpeg?auto=compress&cs=tinysrgb&w=900', 4, 1),
 ('cbb9cd31-f998-4044-a919-ed074d82eded', 'Mahotsav Gathering', 'Events', 'https://images.pexels.com/photos/1190298/pexels-photo-1190298.jpeg?auto=compress&cs=tinysrgb&w=900', 7, 1);
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `members`
+--
+
+CREATE TABLE `members` (
+  `id` varchar(64) NOT NULL,
+  `name` varchar(255) DEFAULT NULL,
+  `designation` varchar(255) DEFAULT NULL,
+  `image` varchar(500) DEFAULT NULL,
+  `sort_order` int(11) DEFAULT 0,
+  `active` tinyint(1) DEFAULT 1
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- Dumping data for table `members`
+--
+
+INSERT INTO `members` (`id`, `name`, `designation`, `image`, `sort_order`, `active`) VALUES
+('2879a0f1-d6d9-4eed-9374-9e1fe57de193', 'Sri Prasanna Kumar Das', 'President', '/uploads/1790943654336-cde601bb-c507-4141-8331-8a0ca6ce1fe5.jpeg', 1, 1),
+('6d698984-5944-4390-858d-c583d1383456', 'Sri Bijay Kumar Sahoo', 'Secretary', '/uploads/1790941101590-eafe1632-4c30-4268-b960-17b1cd7f0090.jpeg', 2, 1),
+('7f890968-e021-4005-a07b-fa660f102b26', 'Smt. Minati Devi', 'Treasurer', '/uploads/1790941118778-18cafc42-d124-4644-92f2-d15a079ce7a5.jpeg', 3, 1),
+('8555063b-879c-4426-8961-b699df3b6c23', 'Sri Raghunath Mohanty', 'Vice President', '/uploads/1790943608244-7fcf218b-99c3-4fe1-9777-bab1128267b2.jpeg', 4, 1);
 
 -- --------------------------------------------------------
 
@@ -199,7 +225,7 @@ CREATE TABLE `settings` (
 --
 
 INSERT INTO `settings` (`id`, `site_name`, `tagline`, `priest_name`, `priest_father`, `phone`, `email`, `whatsapp`, `address`, `welcome_title`, `welcome_subtitle`, `hero_image`, `about`, `disclaimer`, `about_eyebrow`, `about_title`, `about_lead`, `about_image`, `about_darshan`, `about_hill`, `logo`, `favicon`, `contact_email`, `footer_about`, `copyright`, `footer_title`, `footer_address`, `footer_phone`, `footer_email`, `footer_links_title`, `footer_contact_title`, `footer_links`) VALUES
-(1, 'Banki Mahotsav', 'Maa Charchika · Banki, Odisha', 'Banki Mahotsav Committee', 'Charchika Temple Seva', '+91 9876543210', 'info@bankimahotsav.com', '+91 9876543210', 'Charchika Temple Road, Banki, Cuttack, Odisha 754008', 'Welcome to Banki Mahotsav', 'Jai Maa Charchika', '/hero.svg', 'Banki Mahotsav is the cultural and spiritual gathering of Banki, Odisha — celebrating Maa Charchika, Odia folk arts, literature, and community seva. Book pujas, send offerings, and support the festival from anywhere.', '[]', 'Adi Shakti Peetha', 'Maa Charchika Temple', '', '', '6:00 AM – 10:00 PM', '', '/logo.svg', '/favicon.svg', 'panda.rahul174@gmail.com', 'Maa Charchika · Banki, Odisha', '© 2026 Banki Mahotsav. All rights reserved.', 'Banki Mahotsav', 'Charchika Temple Road, Banki, Cuttack, Odisha 754008', '+91 9876543210', 'info@bankimahotsav.com', 'Quick Links', 'Contact', '[{\"label\":\"About\",\"path\":\"/about\"},{\"label\":\"Events\",\"path\":\"/events\"},{\"label\":\"Books\",\"path\":\"/books\"},{\"label\":\"Gallery\",\"path\":\"/gallery\"},{\"label\":\"Contact\",\"path\":\"/contact\"}]');
+(1, 'Banki Mahotsav', 'Maa Charchika · Banki, Odisha', 'Banki Mahotsav Committee', 'Charchika Temple Seva', '+91 9876543210', 'info@bankimahotsav.com', '+91 9876543210', 'Charchika Temple Road, Banki, Cuttack, Odisha 754008', 'Welcome to Banki Mahotsav', 'Jai Maa Charchika', '/hero.jpg', 'Banki Mahotsav is the cultural and spiritual gathering of Banki, Odisha — celebrating Maa Charchika, Odia folk arts, literature, and community seva. Book pujas, send offerings, and support the festival from anywhere.', '[]', 'Adi Shakti Peetha', 'Maa Charchika Temple', '', '', '6:00 AM – 10:00 PM', '', '/logo.svg', '/favicon.svg', 'panda.rahul174@gmail.com', 'Maa Charchika · Banki, Odisha', '© 2026 Banki Mahotsav. All rights reserved.', 'Banki Mahotsav', 'Charchika Temple Road, Banki, Cuttack, Odisha 754008', '+91 9876543210', 'info@bankimahotsav.com', 'Quick Links', 'Contact', '[{\"label\":\"About\",\"path\":\"/about\"},{\"label\":\"Events\",\"path\":\"/events\"},{\"label\":\"Books\",\"path\":\"/books\"},{\"label\":\"Gallery\",\"path\":\"/gallery\"},{\"label\":\"Contact\",\"path\":\"/contact\"}]');
 
 -- --------------------------------------------------------
 
@@ -246,6 +272,12 @@ ALTER TABLE `events`
 -- Indexes for table `gallery`
 --
 ALTER TABLE `gallery`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- Indexes for table `members`
+--
+ALTER TABLE `members`
   ADD PRIMARY KEY (`id`);
 
 --

@@ -31,6 +31,34 @@ function bool(v) {
   return v === true || v === 1 || v === "1" || v === "true";
 }
 
+function datetimeLocal(v) {
+  if (!v) return "";
+  let d;
+  if (v instanceof Date) d = v;
+  else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(String(v))) return String(v).slice(0, 16);
+  else if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}/.test(String(v))) return String(v).slice(0, 16).replace(" ", "T");
+  else if (/^\d{4}-\d{2}-\d{2}$/.test(String(v))) return `${String(v)}T00:00`;
+  else d = new Date(v);
+  if (!d || Number.isNaN(d.getTime()) || d.getFullYear() < 2000) return "";
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const h = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  return `${y}-${m}-${day}T${h}:${min}`;
+}
+
+function toMysqlDateTime(v) {
+  if (v === "" || v == null) return null;
+  const s = String(v).trim().replace("T", " ");
+  if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return `${s} 00:00:00`;
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(s)) return `${s}:00`;
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}/.test(s)) return s.slice(0, 19);
+  const d = new Date(v);
+  if (Number.isNaN(d.getTime()) || d.getFullYear() < 2000) return null;
+  return datetimeLocal(d).replace("T", " ") + ":00";
+}
+
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS settings (
   id INT PRIMARY KEY,
@@ -62,8 +90,8 @@ CREATE TABLE IF NOT EXISTS events (
   id VARCHAR(64) PRIMARY KEY,
   slug VARCHAR(191) UNIQUE,
   title VARCHAR(255),
-  starts_at DATE NULL,
-  ends_at DATE NULL,
+  starts_at DATETIME NULL,
+  ends_at DATETIME NULL,
   description TEXT,
   excerpt TEXT,
   body TEXT,
@@ -76,6 +104,7 @@ CREATE TABLE IF NOT EXISTS events (
   rituals TEXT,
   cta VARCHAR(128),
   featured TINYINT(1) DEFAULT 0,
+  is_primary TINYINT(1) DEFAULT 0,
   active TINYINT(1) DEFAULT 1,
   sort_order INT DEFAULT 0
 );
@@ -104,6 +133,15 @@ CREATE TABLE IF NOT EXISTS gallery (
   id VARCHAR(64) PRIMARY KEY,
   title VARCHAR(255),
   category VARCHAR(64),
+  image VARCHAR(500),
+  sort_order INT DEFAULT 0,
+  active TINYINT(1) DEFAULT 1
+);
+
+CREATE TABLE IF NOT EXISTS members (
+  id VARCHAR(64) PRIMARY KEY,
+  name VARCHAR(255),
+  designation VARCHAR(255),
   image VARCHAR(500),
   sort_order INT DEFAULT 0,
   active TINYINT(1) DEFAULT 1
@@ -218,8 +256,8 @@ const MAPS = {
     id: r.id,
     slug: r.slug,
     title: r.title,
-    startsAt: r.starts_at ? String(r.starts_at).slice(0, 10) : "",
-    endsAt: r.ends_at ? String(r.ends_at).slice(0, 10) : "",
+    startsAt: datetimeLocal(r.starts_at),
+    endsAt: datetimeLocal(r.ends_at),
     description: r.description,
     excerpt: r.excerpt || r.description,
     body: r.body || r.description,
@@ -232,6 +270,7 @@ const MAPS = {
     rituals: r.rituals || "",
     cta: r.cta,
     featured: bool(r.featured),
+    primary: bool(r.is_primary),
     active: r.active == null ? true : bool(r.active),
     order: r.sort_order == null ? 0 : Number(r.sort_order),
   }),
@@ -241,6 +280,14 @@ const MAPS = {
     category: r.category,
     image: r.image,
     order: r.sort_order,
+    active: r.active == null ? true : bool(r.active),
+  }),
+  members: (r) => ({
+    id: r.id,
+    name: r.name || "",
+    designation: r.designation || "",
+    image: r.image || "",
+    order: r.sort_order == null ? 0 : Number(r.sort_order),
     active: r.active == null ? true : bool(r.active),
   }),
   messages: (r) => ({
@@ -295,6 +342,7 @@ function toCols(obj) {
     category: "category",
     duration: "duration",
     featured: "featured",
+    primary: "is_primary",
     active: "active",
     description: "description",
     startsAt: "starts_at",
@@ -312,6 +360,7 @@ function toCols(obj) {
     pages: "pages",
     pdf: "pdf",
     name: "name",
+    designation: "designation",
     createdAt: "created_at",
     message: "message",
     read: "read",
@@ -323,10 +372,10 @@ function toCols(obj) {
     const col = map[k] || k;
     if (k === "disclaimer") {
       out[col] = JSON.stringify(v ?? []);
-    } else if (k === "featured" || k === "read" || k === "active") {
+    } else if (k === "featured" || k === "read" || k === "active" || k === "primary") {
       out[col] = bool(v) ? 1 : 0;
-    } else if ((k === "startsAt" || k === "endsAt") && (v === "" || v == null)) {
-      out[col] = null;
+    } else if (k === "startsAt" || k === "endsAt") {
+      out[col] = toMysqlDateTime(v);
     } else {
       out[col] = v;
     }
@@ -359,6 +408,7 @@ async function init() {
   await ensureAboutSettingsColumns();
   await seedFestivalsIfNeeded();
   await seedBooksIfNeeded();
+  await seedMembersIfNeeded();
 }
 
 async function ensureEventColumns() {
@@ -373,12 +423,23 @@ async function ensureEventColumns() {
     highlights: "TEXT",
     rituals: "TEXT",
     sort_order: "INT DEFAULT 0",
+    is_primary: "TINYINT(1) DEFAULT 0",
   };
   const cols = await query("SHOW COLUMNS FROM events");
   const have = new Set(cols.map((c) => c.Field));
   for (const [name, def] of Object.entries(needed)) {
     if (!have.has(name)) await query(`ALTER TABLE events ADD COLUMN \`${name}\` ${def}`);
   }
+  const startType = cols.find((c) => c.Field === "starts_at");
+  if (startType && String(startType.Type).toLowerCase() === "date") {
+    await query("ALTER TABLE events MODIFY starts_at DATETIME NULL");
+  }
+  const endType = cols.find((c) => c.Field === "ends_at");
+  if (endType && String(endType.Type).toLowerCase() === "date") {
+    await query("ALTER TABLE events MODIFY ends_at DATETIME NULL");
+  }
+  await query("UPDATE events SET starts_at = NULL WHERE starts_at IS NOT NULL AND YEAR(starts_at) < 2000");
+  await query("UPDATE events SET ends_at = NULL WHERE ends_at IS NOT NULL AND YEAR(ends_at) < 2000");
   const rows = await query("SELECT id, sort_order FROM events ORDER BY sort_order ASC, title ASC");
   if (rows.length && rows.every((r) => Number(r.sort_order) === 0)) {
     let i = 1;
@@ -405,7 +466,7 @@ async function ensureBookColumns() {
 }
 
 async function ensureActiveColumns() {
-  for (const table of ["events", "books", "gallery"]) {
+  for (const table of ["events", "books", "gallery", "members"]) {
     const cols = await query(`SHOW COLUMNS FROM \`${table}\``);
     const have = new Set(cols.map((c) => c.Field));
     if (!have.has("active")) {
@@ -620,6 +681,22 @@ async function seedBooksIfNeeded() {
   }
   for (const item of bookSeed()) {
     await query("UPDATE books SET pdf = COALESCE(NULLIF(pdf,''), ?) WHERE slug = ?", [item.pdf, item.slug]);
+  }
+}
+
+function memberSeed() {
+  return [
+    { id: uuid(), name: "Sri Prasanna Kumar Das", designation: "President", image: "", order: 1, active: true },
+    { id: uuid(), name: "Sri Bijay Kumar Sahoo", designation: "Secretary", image: "", order: 2, active: true },
+    { id: uuid(), name: "Smt. Minati Devi", designation: "Treasurer", image: "", order: 3, active: true },
+    { id: uuid(), name: "Sri Raghunath Mohanty", designation: "Vice President", image: "", order: 4, active: true },
+  ];
+}
+
+async function seedMembersIfNeeded() {
+  const [{ n }] = await query("SELECT COUNT(*) AS n FROM members");
+  if (Number(n) === 0) {
+    for (const item of memberSeed()) await insertRow("members", item);
   }
 }
 

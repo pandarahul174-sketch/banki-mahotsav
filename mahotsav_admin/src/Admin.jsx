@@ -10,6 +10,8 @@ function adminApi(path, opts) {
 
 function prettyLabel(key) {
   if (key === "order") return "Order no";
+  if (key === "startsAt") return "Starts at";
+  if (key === "endsAt") return "Ends at";
   return key
     .replace(/([A-Z])/g, " $1")
     .replace(/^./, (s) => s.toUpperCase());
@@ -126,10 +128,11 @@ export function Dashboard() {
       adminApi("/api/admin/events"),
       adminApi("/api/admin/books"),
       adminApi("/api/admin/gallery"),
+      adminApi("/api/admin/members"),
       adminApi("/api/admin/messages"),
-    ]).then(([stats, events, books, gallery, messages]) => {
-      setData({ stats, events, books, gallery, messages });
-    }).catch(() => setData({ stats: { events: 0, books: 0, gallery: 0, messages: 0 }, events: [], books: [], gallery: [], messages: [] }));
+    ]).then(([stats, events, books, gallery, members, messages]) => {
+      setData({ stats, events, books, gallery, members, messages });
+    }).catch(() => setData({ stats: { events: 0, books: 0, gallery: 0, members: 0, messages: 0 }, events: [], books: [], gallery: [], members: [], messages: [] }));
   }, []);
   if (!data) return <p>Loading…</p>;
 
@@ -140,17 +143,19 @@ export function Dashboard() {
     { key: "Events", value: data.stats.events, sub: `${published(data.events)} published on the site`, to: "/events", icon: "events", tone: "saffron" },
     { key: "Books", value: data.stats.books, sub: `${published(data.books)} available to download`, to: "/books", icon: "books", tone: "teal" },
     { key: "Gallery", value: data.stats.gallery, sub: `${published(data.gallery)} photos visible publicly`, to: "/gallery", icon: "gallery", tone: "gold" },
-    { key: "Messages", value: data.stats.messages, sub: unread ? `${unread} unread ${unread === 1 ? "enquiry" : "enquiries"}` : "Inbox is up to date", to: "/messages", icon: "messages", tone: "maroon" },
+    { key: "Members", value: data.stats.members, sub: `${published(data.members)} shown on the home page`, to: "/members", icon: "members", tone: "maroon" },
   ];
   const health = [
     { label: "Events", live: published(data.events), total: data.events.length, tone: "saffron" },
     { label: "Books", live: published(data.books), total: data.books.length, tone: "teal" },
     { label: "Gallery", live: published(data.gallery), total: data.gallery.length, tone: "gold" },
+    { label: "Members", live: published(data.members), total: data.members.length, tone: "maroon" },
   ];
   const actions = [
     { to: "/events", label: "Manage events", icon: "events" },
     { to: "/books", label: "Manage books", icon: "books" },
     { to: "/gallery", label: "Update gallery", icon: "gallery" },
+    { to: "/members", label: "Manage members", icon: "members" },
     { to: "/messages", label: "Open inbox", icon: "messages" },
     { to: "/settings", label: "Site settings", icon: "settings" },
     { to: "/footer", label: "Edit footer", icon: "footer" },
@@ -556,10 +561,27 @@ export function AboutSettings() {
   );
 }
 
-function Crud({ col, fields, title, selects = {}, defaults = {}, hint }) {
+function formatWhen(v) {
+  if (!v) return "—";
+  const s = String(v).trim();
+  const iso = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(s) ? `${s}:00` : s;
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime()) || d.getFullYear() < 2000) return "—";
+  return d.toLocaleString(undefined, {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
+function Crud({ col, fields, title, selects = {}, defaults = {}, hint, showPrimary, listFields, viewPath }) {
   const loc = useLocation();
   const [rows, setRows] = useState([]);
   const [edit, setEdit] = useState(null);
+  const columns = listFields || fields.slice(0, 4);
+  const citizenUrl = (import.meta.env.VITE_CITIZEN_URL || "http://localhost:5173").replace(/\/$/, "");
   async function load() {
     const data = await adminApi(`/api/admin/${col}`);
     const list = Array.isArray(data) ? [...data] : [];
@@ -629,15 +651,15 @@ function Crud({ col, fields, title, selects = {}, defaults = {}, hint }) {
       </div>
       <div className="table-wrap">
         <table className="table">
-          <thead><tr>{fields.slice(0, 4).map((f) => <th key={f}>{prettyLabel(f)}</th>)}<th>Status</th><th>Actions</th></tr></thead>
+          <thead><tr>{columns.map((f) => <th key={f}>{prettyLabel(f)}</th>)}<th>Status</th><th>Actions</th></tr></thead>
           <tbody>
             {rows.map((r) => (
               <tr key={r.id} className={r.active === false ? "row-inactive" : ""}>
-                {fields.slice(0, 4).map((f) => (
+                {columns.map((f) => (
                   <td key={f}>
                     {f === "image" && r[f] ? (
-                      <button type="button" className="img-preview-btn" onClick={() => swalImage(r[f], r.title)} aria-label="View image">
-                        <img src={r[f]} alt={r.title || ""} className="admin-thumb" />
+                      <button type="button" className="img-preview-btn" onClick={() => swalImage(r[f], r.title || r.name)} aria-label="View image">
+                        <img src={r[f]} alt={r.title || r.name || ""} className="admin-thumb" />
                       </button>
                     ) : f === "order" ? (
                       <input
@@ -649,6 +671,8 @@ function Crud({ col, fields, title, selects = {}, defaults = {}, hint }) {
                         onBlur={(e) => saveOrder(r, e.target.value)}
                         onKeyDown={(e) => { if (e.key === "Enter") e.currentTarget.blur(); }}
                       />
+                    ) : f === "startsAt" || f === "endsAt" ? (
+                      formatWhen(r[f])
                     ) : String(r[f] ?? "").slice(0, 48)}
                   </td>
                 ))}
@@ -681,6 +705,31 @@ function Crud({ col, fields, title, selects = {}, defaults = {}, hint }) {
                   </button>
                 </td>
                 <td className="row-actions">
+                  {viewPath && (
+                    <a className="btn-outline" href={`${citizenUrl}${viewPath(r)}`} target="_blank" rel="noreferrer">View</a>
+                  )}
+                  {showPrimary && (
+                    <button
+                      type="button"
+                      className={r.primary ? "btn-red" : "btn-outline"}
+                      onClick={async () => {
+                        if (r.primary) return;
+                        const ok = await swalConfirm({
+                          title: "Set as primary event?",
+                          text: "The home page countdown will use this event’s start date until it begins.",
+                          confirmText: "Set primary",
+                        });
+                        if (!ok) return;
+                        try {
+                          await adminApi(`/api/admin/events/${r.id}/primary`, { method: "POST" });
+                          await load();
+                          swalToast("Primary event updated");
+                        } catch (ex) {
+                          await swalError("Could not set primary event", ex.message);
+                        }
+                      }}
+                    >{r.primary ? "Primary event" : "Set primary"}</button>
+                  )}
                   <button className="btn-outline" onClick={() => setEdit({ ...r, active: r.active !== false })}>Edit</button>
                   <button className="danger" onClick={async () => {
                     const ok = await swalConfirm({
@@ -733,6 +782,12 @@ function Crud({ col, fields, title, selects = {}, defaults = {}, hint }) {
                         <option value="true">Yes</option>
                         <option value="false">No</option>
                       </select>
+                    ) : f === "startsAt" || f === "endsAt" ? (
+                      <input
+                        type="datetime-local"
+                        value={String(edit[f] || "").slice(0, 16)}
+                        onChange={(e) => setEdit({ ...edit, [f]: e.target.value })}
+                      />
                     ) : f === "order" ? (
                       <input type="number" min="1" value={edit[f] ?? ""} onChange={(e) => setEdit({ ...edit, order: e.target.value === "" ? "" : Number(e.target.value) })} />
                     ) : selects[f] ? (
@@ -778,8 +833,11 @@ export function EventsPage() {
       col="events"
       title="Events"
       fields={["order", "title", "slug", "image", "excerpt", "body", "timing", "duration", "footfall", "location", "highlights", "rituals", "startsAt", "endsAt", "cta", "featured", "active"]}
-      defaults={{ order: "", title: "", slug: "", image: "", excerpt: "", body: "", timing: "", duration: "", footfall: "", location: "", highlights: "", rituals: "", startsAt: "", endsAt: "", cta: "Learn More", featured: true, active: true }}
-      hint="Inactive events stay in admin but are hidden on the public site. Lower order no appears first."
+      defaults={{ order: "", title: "", slug: "", image: "", excerpt: "", body: "", timing: "", duration: "", footfall: "", location: "", highlights: "", rituals: "", startsAt: "", endsAt: "", cta: "Learn More", featured: true, active: true, primary: false }}
+      hint="Use Set primary on one event. Pick its start date and time — the home countdown runs until then, then it hides."
+      showPrimary
+      listFields={["order", "title", "startsAt", "endsAt", "image"]}
+      viewPath={(r) => `/events/${r.slug || ""}`}
     />
   );
 }
@@ -806,6 +864,18 @@ export function GalleryPage() {
       selects={{ category: ["Temple", "Festivals", "Deities", "Events"] }}
       defaults={{ title: "", category: "Temple", image: "", order: 0, active: true }}
       hint="Inactive photos stay in admin but are hidden on the public Gallery page."
+    />
+  );
+}
+
+export function MembersPage() {
+  return (
+    <Crud
+      col="members"
+      title="Members"
+      fields={["order", "name", "designation", "image", "active"]}
+      defaults={{ order: "", name: "", designation: "", image: "", active: true }}
+      hint="These names and designations appear in Our Members on the public home page. Inactive members stay in admin but are hidden on the site."
     />
   );
 }
@@ -933,6 +1003,7 @@ function SideIcon({ name }) {
     events: "M7 3v3M17 3v3M4 8h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1zm3 7h.01M12 12h.01M16 12h.01M8 16h.01M12 16h.01",
     books: "M5 4h11a2 2 0 0 1 2 2v14H7a2 2 0 0 0-2 2V4zm0 0v16M16 8H9m7 4H9",
     gallery: "M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6zm3 10 3.5-4.5 2.5 3 1.5-2L18 16M9 9h.01",
+    members: "M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0zM4 20a8 8 0 0 1 16 0",
     settings: "M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4",
     messages: "M4 6h16v10H7l-3 3V6z",
     about: "M12 3a9 9 0 1 0 .01 0zM12 8h.01M11 12h2v6h-2",
@@ -997,6 +1068,7 @@ export function AdminApp() {
             <MenuLink to="/events"><SideIcon name="events" />Events</MenuLink>
             <MenuLink to="/books"><SideIcon name="books" />Books</MenuLink>
             <MenuLink to="/gallery"><SideIcon name="gallery" />Gallery</MenuLink>
+            <MenuLink to="/members"><SideIcon name="members" />Members</MenuLink>
             <p className="side-label">Manage</p>
             <MenuLink to="/about"><SideIcon name="about" />About</MenuLink>
             <MenuLink to="/footer"><SideIcon name="footer" />Footer</MenuLink>
