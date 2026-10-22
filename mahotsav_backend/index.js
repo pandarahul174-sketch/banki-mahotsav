@@ -74,12 +74,13 @@ function publicOnly(rows) {
 }
 
 app.get("/api/site", wrap(async (_req, res) => {
-  const [settings, events, gallery, books, members] = await Promise.all([
+  const [settings, events, gallery, books, members, places] = await Promise.all([
     db.getSettings(),
     db.list("events", "ORDER BY sort_order ASC, title ASC"),
-    db.list("gallery", "ORDER BY sort_order ASC"),
+    db.list("gallery", "ORDER BY year DESC, sort_order ASC"),
     db.list("books", "ORDER BY sort_order ASC, title ASC"),
     db.list("members", "ORDER BY sort_order ASC, name ASC"),
+    db.list("places", "ORDER BY sort_order ASC, title ASC"),
   ]);
   res.json({
     settings,
@@ -87,15 +88,22 @@ app.get("/api/site", wrap(async (_req, res) => {
     gallery: publicOnly(gallery),
     books: publicOnly(books),
     members: publicOnly(members),
+    places: publicOnly(places),
   });
 }));
 
 app.get("/api/gallery", wrap(async (_req, res) => {
-  res.json(publicOnly(await db.list("gallery", "ORDER BY sort_order ASC")));
+  res.json(publicOnly(await db.list("gallery", "ORDER BY year DESC, sort_order ASC")));
 }));
 
 app.get("/api/events/:slug", wrap(async (req, res) => {
   const item = await db.findBy("events", "slug", req.params.slug);
+  if (!item || item.active === false) return res.status(404).json({ error: "Not found" });
+  res.json(item);
+}));
+
+app.get("/api/places/:slug", wrap(async (req, res) => {
+  const item = await db.findBy("places", "slug", req.params.slug);
   if (!item || item.active === false) return res.status(404).json({ error: "Not found" });
   res.json(item);
 }));
@@ -162,11 +170,12 @@ app.post("/api/admin/login", wrap(async (req, res) => {
 }));
 
 app.get("/api/admin/stats", auth("admin"), wrap(async (_req, res) => {
-  const [[events], [books], [gallery], [members], [messages]] = await Promise.all([
+  const [[events], [books], [gallery], [members], [places], [messages]] = await Promise.all([
     db.query("SELECT COUNT(*) AS n FROM events"),
     db.query("SELECT COUNT(*) AS n FROM books"),
     db.query("SELECT COUNT(*) AS n FROM gallery"),
     db.query("SELECT COUNT(*) AS n FROM members"),
+    db.query("SELECT COUNT(*) AS n FROM places"),
     db.query("SELECT COUNT(*) AS n FROM messages"),
   ]);
   res.json({
@@ -174,11 +183,12 @@ app.get("/api/admin/stats", auth("admin"), wrap(async (_req, res) => {
     books: books.n,
     gallery: gallery.n,
     members: members.n,
+    places: places.n,
     messages: messages.n,
   });
 }));
 
-const collections = ["events", "books", "gallery", "members", "messages"];
+const collections = ["events", "books", "gallery", "members", "places", "messages"];
 
 app.get("/api/admin/:col", auth("admin"), wrap(async (req, res) => {
   const col = req.params.col;
@@ -190,7 +200,8 @@ app.get("/api/admin/:col", auth("admin"), wrap(async (req, res) => {
   if (!collections.includes(col)) return res.status(404).json({ error: "Unknown collection" });
   let extra = "";
   if (col === "members") extra = "ORDER BY sort_order ASC, name ASC";
-  else if (col === "gallery" || col === "events" || col === "books") extra = "ORDER BY sort_order ASC, title ASC";
+  else if (col === "gallery") extra = "ORDER BY year DESC, sort_order ASC, title ASC";
+  else if (col === "events" || col === "books" || col === "places") extra = "ORDER BY sort_order ASC, title ASC";
   else if (col === "messages") extra = "ORDER BY created_at DESC";
   res.json(await db.list(col, extra));
 }));
@@ -225,8 +236,8 @@ app.post("/api/admin/:col", auth("admin"), wrap(async (req, res) => {
   const item = { ...req.body, id: db.uuid() };
   if (!item.slug && item.title) item.slug = slugify(item.title);
   if (col === "messages" && !item.createdAt) item.createdAt = db.now();
-  if ((col === "events" || col === "gallery" || col === "books" || col === "members") && (item.order == null || item.order === "")) {
-    const table = col === "gallery" ? "gallery" : col === "books" ? "books" : col === "members" ? "members" : "events";
+  if ((col === "events" || col === "gallery" || col === "books" || col === "members" || col === "places") && (item.order == null || item.order === "")) {
+    const table = col === "gallery" ? "gallery" : col === "books" ? "books" : col === "members" ? "members" : col === "places" ? "places" : "events";
     const [{ n }] = await db.query(`SELECT COALESCE(MAX(sort_order), 0) AS n FROM \`${table}\``);
     item.order = Number(n) + 1;
   }

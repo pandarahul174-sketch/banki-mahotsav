@@ -1,5 +1,5 @@
 import { Route, Routes } from "react-router-dom";
-import { AboutSettings, AdminApp, AdminLogin, BooksPage, Dashboard, EventsPage, FooterSettings, GalleryPage, MembersPage, MessagesPage, SettingsEditor } from "./Admin";
+import { AboutSettings, AdminApp, AdminLogin, BooksPage, Dashboard, EventsPage, FooterSettings, GalleryPage, MembersPage, MessagesPage, PlacesPage, SettingsEditor } from "./Admin";
 
 export default function App() {
   return (
@@ -14,6 +14,8 @@ export default function App() {
         <Route path="books" element={<BooksPage />} />
         <Route path="gallery" element={<GalleryPage />} />
         <Route path="members" element={<MembersPage />} />
+        <Route path="baraputra" element={<MembersPage />} />
+        <Route path="places" element={<PlacesPage />} />
         <Route path="messages" element={<MessagesPage />} />
       </Route>
     </Routes>

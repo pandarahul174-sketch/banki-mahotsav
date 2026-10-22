@@ -133,6 +133,7 @@ CREATE TABLE IF NOT EXISTS gallery (
   id VARCHAR(64) PRIMARY KEY,
   title VARCHAR(255),
   category VARCHAR(64),
+  year SMALLINT NULL,
   image VARCHAR(500),
   sort_order INT DEFAULT 0,
   active TINYINT(1) DEFAULT 1
@@ -143,6 +144,18 @@ CREATE TABLE IF NOT EXISTS members (
   name VARCHAR(255),
   designation VARCHAR(255),
   image VARCHAR(500),
+  sort_order INT DEFAULT 0,
+  active TINYINT(1) DEFAULT 1
+);
+
+CREATE TABLE IF NOT EXISTS places (
+  id VARCHAR(64) PRIMARY KEY,
+  slug VARCHAR(191) UNIQUE,
+  title VARCHAR(255),
+  excerpt TEXT,
+  body TEXT,
+  image VARCHAR(500),
+  location VARCHAR(255),
   sort_order INT DEFAULT 0,
   active TINYINT(1) DEFAULT 1
 );
@@ -278,6 +291,7 @@ const MAPS = {
     id: r.id,
     title: r.title,
     category: r.category,
+    year: r.year == null || r.year === "" ? "" : Number(r.year),
     image: r.image,
     order: r.sort_order,
     active: r.active == null ? true : bool(r.active),
@@ -287,6 +301,17 @@ const MAPS = {
     name: r.name || "",
     designation: r.designation || "",
     image: r.image || "",
+    order: r.sort_order == null ? 0 : Number(r.sort_order),
+    active: r.active == null ? true : bool(r.active),
+  }),
+  places: (r) => ({
+    id: r.id,
+    slug: r.slug,
+    title: r.title,
+    excerpt: r.excerpt || "",
+    body: r.body || "",
+    image: r.image || "",
+    location: r.location || "",
     order: r.sort_order == null ? 0 : Number(r.sort_order),
     active: r.active == null ? true : bool(r.active),
   }),
@@ -361,6 +386,7 @@ function toCols(obj) {
     pdf: "pdf",
     name: "name",
     designation: "designation",
+    year: "year",
     createdAt: "created_at",
     message: "message",
     read: "read",
@@ -376,6 +402,9 @@ function toCols(obj) {
       out[col] = bool(v) ? 1 : 0;
     } else if (k === "startsAt" || k === "endsAt") {
       out[col] = toMysqlDateTime(v);
+    } else if (k === "year") {
+      const n = Number(v);
+      out[col] = Number.isFinite(n) && n >= 1900 && n <= 2100 ? Math.round(n) : null;
     } else {
       out[col] = v;
     }
@@ -404,11 +433,13 @@ async function init() {
   if (Number(n) === 0) await seed();
   await ensureEventColumns();
   await ensureBookColumns();
+  await ensureGalleryColumns();
   await ensureActiveColumns();
   await ensureAboutSettingsColumns();
   await seedFestivalsIfNeeded();
   await seedBooksIfNeeded();
   await seedMembersIfNeeded();
+  await seedPlacesIfNeeded();
 }
 
 async function ensureEventColumns() {
@@ -448,6 +479,13 @@ async function ensureEventColumns() {
       i += 1;
     }
   }
+}
+
+async function ensureGalleryColumns() {
+  const cols = await query("SHOW COLUMNS FROM gallery");
+  const have = new Set(cols.map((c) => c.Field));
+  if (!have.has("year")) await query("ALTER TABLE gallery ADD COLUMN `year` SMALLINT NULL");
+  await query("UPDATE gallery SET year = 2026 WHERE year IS NULL");
 }
 
 async function ensureBookColumns() {
@@ -518,6 +556,8 @@ async function ensureAboutSettingsColumns() {
     JSON.stringify([
       { label: "About", path: "/about" },
       { label: "Events", path: "/events" },
+      { label: "Places", path: "/places" },
+      { label: "Baraputra", path: "/baraputra" },
       { label: "Books", path: "/books" },
       { label: "Gallery", path: "/gallery" },
       { label: "Contact", path: "/contact" },
@@ -686,10 +726,10 @@ async function seedBooksIfNeeded() {
 
 function memberSeed() {
   return [
-    { id: uuid(), name: "Sri Prasanna Kumar Das", designation: "President", image: "", order: 1, active: true },
-    { id: uuid(), name: "Sri Bijay Kumar Sahoo", designation: "Secretary", image: "", order: 2, active: true },
-    { id: uuid(), name: "Smt. Minati Devi", designation: "Treasurer", image: "", order: 3, active: true },
-    { id: uuid(), name: "Sri Raghunath Mohanty", designation: "Vice President", image: "", order: 4, active: true },
+    { id: uuid(), name: "Sri Prasanna Kumar Das", designation: "President", image: "/members/president.jpg", order: 1, active: true },
+    { id: uuid(), name: "Sri Bijay Kumar Sahoo", designation: "Secretary", image: "/members/secretary.jpg", order: 2, active: true },
+    { id: uuid(), name: "Smt. Minati Devi", designation: "Treasurer", image: "/members/treasurer.jpg", order: 3, active: true },
+    { id: uuid(), name: "Sri Raghunath Mohanty", designation: "Vice President", image: "/members/vice-president.jpg", order: 4, active: true },
   ];
 }
 
@@ -697,6 +737,40 @@ async function seedMembersIfNeeded() {
   const [{ n }] = await query("SELECT COUNT(*) AS n FROM members");
   if (Number(n) === 0) {
     for (const item of memberSeed()) await insertRow("members", item);
+  }
+}
+
+function placeSeed() {
+  return [
+    {
+      id: uuid(),
+      slug: "maa-charchika-temple-shakti-peeth",
+      title: "Maa Charchika Temple Shakti Peeth",
+      excerpt: "The most iconic landmark of Banki, dedicated to Maa Charchika (Chamunda). It is officially recognized as a religious tourist centre.",
+      body: "The most iconic landmark of Banki, dedicated to Maa Charchika (Chamunda). It is officially recognized as a religious tourist centre.",
+      image: "/hero.jpg",
+      location: "Banki, Cuttack, Odisha",
+      order: 1,
+      active: true,
+    },
+    {
+      id: uuid(),
+      slug: "damapada-avayaranya",
+      title: "Damapada Avayaranya",
+      excerpt: "A serene forest sanctuary near Banki, known for its rich greenery, natural beauty, and diverse wildlife.",
+      body: "A serene forest sanctuary near Banki, known for its rich greenery, natural beauty, and diverse wildlife.",
+      image: "/temple.svg",
+      location: "Damapada, Banki, Odisha",
+      order: 2,
+      active: true,
+    },
+  ];
+}
+
+async function seedPlacesIfNeeded() {
+  const [{ n }] = await query("SELECT COUNT(*) AS n FROM places");
+  if (Number(n) === 0) {
+    for (const item of placeSeed()) await insertRow("places", item);
   }
 }
 
@@ -724,6 +798,8 @@ function seedPayload() {
       footerLinks: [
         { label: "About", path: "/about" },
         { label: "Events", path: "/events" },
+        { label: "Places", path: "/places" },
+        { label: "Baraputra", path: "/baraputra" },
         { label: "Books", path: "/books" },
         { label: "Gallery", path: "/gallery" },
         { label: "Contact", path: "/contact" },

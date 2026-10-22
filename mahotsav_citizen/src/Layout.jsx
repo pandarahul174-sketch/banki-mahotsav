@@ -59,6 +59,8 @@ export function Layout() {
             <NavLink to="/" end>Home</NavLink>
             <NavLink to="/about">About</NavLink>
             <NavLink to="/events">Events</NavLink>
+            <NavLink to="/places">Places</NavLink>
+            <NavLink to="/baraputra">Baraputra</NavLink>
             <NavLink to="/books">Books</NavLink>
             <NavLink to="/gallery">Gallery</NavLink>
             <NavLink to="/contact" className="nav-cta">Contact</NavLink>
@@ -85,6 +87,8 @@ function FooterInner({ s }) {
     : [
       { label: "About", path: "/about" },
       { label: "Events", path: "/events" },
+      { label: "Places", path: "/places" },
+      { label: "Baraputra", path: "/baraputra" },
       { label: "Books", path: "/books" },
       { label: "Gallery", path: "/gallery" },
       { label: "Contact", path: "/contact" },

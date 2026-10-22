@@ -371,6 +371,7 @@ button, input, select, textarea { font: inherit; }
 .home-g-lead { color: var(--muted); max-width: 520px; margin: 0 auto 28px; }
 .home-g-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
 .home-g-grid img { width: 100%; height: 280px; object-fit: cover; border-radius: var(--radius); }
+.home-g-all { display: inline-block; margin-top: 28px; }
 
 .home-members {
   padding: 80px 0 96px;
@@ -384,6 +385,20 @@ button, input, select, textarea { font: inherit; }
   font-size: clamp(36px, 5vw, 52px);
   font-weight: 700;
   line-height: 1.15;
+}
+.members-lead {
+  color: var(--muted);
+  max-width: 520px;
+  margin: -28px auto 40px;
+  font-size: 15px;
+}
+.btn-members-all {
+  margin-top: 36px;
+  color: var(--ink, #3b2416);
+  border-color: rgba(59, 36, 22, .28);
+}
+.baraputra-page {
+  padding-top: 48px;
 }
 .member-grid {
   display: grid;
@@ -564,7 +579,16 @@ button, input, select, textarea { font: inherit; }
 .crumb a { color: inherit; }
 .page-banner h1 { font-family: "Playfair Display", serif; font-size: clamp(28px, 5vw, 44px); margin: 0 0 10px; font-weight: 700; }
 .page-banner p { max-width: 520px; opacity: .85; margin: 0; line-height: 1.5; }
-.filters { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; padding: 32px 0 24px; }
+.filters { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 32px 0 24px; }
+.filter-row { display: flex; justify-content: center; gap: 8px; flex-wrap: wrap; }
+.gallery-year-block { margin: 0 0 8px; }
+.gallery-year-title {
+  margin: 0 0 16px;
+  font-family: "Playfair Display", serif;
+  font-size: 28px;
+  font-weight: 700;
+  text-align: center;
+}
 .gallery-band { background: var(--cream); }
 .chip {
   border: 1px solid #e8e8e8;
@@ -581,7 +605,8 @@ button, input, select, textarea { font: inherit; }
 .rich-body p { margin: 0 0 12px; }
 .rich-body h2, .rich-body h3 { color: var(--ink); font-family: "Playfair Display", serif; margin: 18px 0 8px; }
 .rich-body ul, .rich-body ol { margin: 0 0 12px; padding-left: 20px; }
-.photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding-bottom: 64px; }
+.photo-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; padding-bottom: 28px; }
+.gallery-band .wrap { padding-bottom: 36px; }
 .photo-grid figure { margin: 0; }
 .photo-btn { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: pointer; }
 .photo-grid img { width: 100%; height: 210px; object-fit: cover; border-radius: 12px; display: block; }

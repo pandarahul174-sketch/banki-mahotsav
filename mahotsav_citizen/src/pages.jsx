@@ -125,6 +125,34 @@ function initials(name) {
     .toUpperCase();
 }
 
+const MEMBER_PHOTOS = {
+  "Sri Prasanna Kumar Das": "/members/president.jpg",
+  "Sri Bijay Kumar Sahoo": "/members/secretary.jpg",
+  "Smt. Minati Devi": "/members/treasurer.jpg",
+  "Sri Raghunath Mohanty": "/members/vice-president.jpg",
+};
+
+function memberPhoto(m) {
+  return m?.image || MEMBER_PHOTOS[m?.name] || "";
+}
+
+function BaraputraCard({ person, onOpen }) {
+  const photo = memberPhoto(person);
+  return (
+    <article className="member-card">
+      {photo ? (
+        <button type="button" className="member-photo" onClick={() => onOpen?.({ ...person, image: photo })} aria-label={`View photo of ${person.name}`}>
+          <img src={photo} alt={person.name} />
+        </button>
+      ) : (
+        <div className="member-avatar" aria-hidden="true">{initials(person.name)}</div>
+      )}
+      <h3>{person.name}</h3>
+      <p>{person.designation}</p>
+    </article>
+  );
+}
+
 function chips(value) {
   if (Array.isArray(value)) return value.map(String).map((s) => s.trim()).filter(Boolean);
   return String(value || "").split(/[,|\n]/).map((s) => s.trim()).filter(Boolean);
@@ -158,7 +186,7 @@ export function Home() {
 
   if (!site) return <div className="wrap page">Loading...</div>;
   const s = site.settings || {};
-  const hero = s.heroImage || "/hero.jpg";
+  const hero = "/hero.jpg?v=20261003";
   const hours = s.aboutDarshan || "6:00 AM – 9:00 PM";
 
   return (
@@ -186,22 +214,21 @@ export function Home() {
 
       <section className="home-fests">
         <div className="wrap">
-          <h2>Upcoming Event</h2>
-          <p className="home-fests-lead">Celebrations and gatherings throughout the year at Charchika Temple</p>
+          <h2>Iconic Places of Banki</h2>
+          <p className="home-fests-lead">Landmarks, sanctuaries, and sacred sites around Banki</p>
           <div className="event-grid">
-            {[...site.events].filter((ev) => ev.image).sort((a, b) => Number(b.featured) - Number(a.featured)).slice(0, 3).map((ev) => (
-              <Link className="fest-tile" key={ev.id} to={`/events/${ev.slug}`}>
-                <img src={ev.image || "/festival.svg"} alt="" />
+            {[...(site.places || [])].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0)).slice(0, 3).map((place) => (
+              <Link className="fest-tile" key={place.id} to={`/places/${place.slug}`}>
+                <img src={place.image || "/temple.svg"} alt="" />
                 <div className="fest-shade">
-                  {ev.featured && <span className="feat-pill">Featured</span>}
-                  <h3>{ev.title}</h3>
-                  <p>{plainText(ev.excerpt || ev.description).slice(0, 90)}</p>
-                  <small>{ev.timing || ev.startsAt}{ev.footfall ? ` · ${ev.footfall}` : ""}</small>
+                  <h3>{place.title}</h3>
+                  <p>{plainText(place.excerpt || place.body).slice(0, 90)}</p>
+                  {place.location && <small>{place.location}</small>}
                 </div>
               </Link>
             ))}
           </div>
-          <Link className="btn-fest-all" to="/events">View all events</Link>
+          <Link className="btn-fest-all" to="/places">View all places</Link>
         </div>
       </section>
 
@@ -244,26 +271,19 @@ export function Home() {
             </Link>
           ))}
         </div>
+        <Link className="btn-outline home-g-all" to="/gallery">View Gallery</Link>
       </section>
       {!!(site.members || []).length && (
         <section className="home-members">
           <div className="wrap members-wrap">
-            <h2>Our Members</h2>
+            <h2>Baraputra of Banki</h2>
+            <p className="members-lead">Distinguished sons of Banki, honoured for their service and contribution</p>
             <div className="member-grid">
-              {[...(site.members || [])].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0)).map((m) => (
-                <article className="member-card" key={m.id}>
-                  {m.image ? (
-                    <button type="button" className="member-photo" onClick={() => setMemberOpen(m)} aria-label={`View photo of ${m.name}`}>
-                      <img src={m.image} alt={m.name} />
-                    </button>
-                  ) : (
-                    <div className="member-avatar" aria-hidden="true">{initials(m.name)}</div>
-                  )}
-                  <h3>{m.name}</h3>
-                  <p>{m.designation}</p>
-                </article>
+              {[...(site.members || [])].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0)).slice(0, 4).map((m) => (
+                <BaraputraCard key={m.id} person={m} onOpen={setMemberOpen} />
               ))}
             </div>
+            <Link className="btn-fest-all btn-members-all" to="/baraputra">View all Baraputra</Link>
           </div>
         </section>
       )}
@@ -423,6 +443,125 @@ export function EventDetail() {
           </div>
         </section>
       )}
+    </div>
+  );
+}
+
+export function Baraputra() {
+  const { site } = useApp();
+  const [open, setOpen] = useState(null);
+  const people = [...(site?.members || [])].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+  useEffect(() => {
+    if (!open) return undefined;
+    function onKey(e) {
+      if (e.key === "Escape") setOpen(null);
+    }
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open]);
+  return (
+    <>
+      <section className="page-banner">
+        <div className="wrap">
+          <p className="crumb"><Link to="/">Home</Link> &gt; Baraputra</p>
+          <h1>Baraputra of Banki</h1>
+          <p>Distinguished sons of Banki, honoured for their service and contribution</p>
+        </div>
+      </section>
+      <section className="home-members baraputra-page">
+        <div className="wrap members-wrap">
+          <div className="member-grid">
+            {people.map((m) => (
+              <BaraputraCard key={m.id} person={m} onOpen={setOpen} />
+            ))}
+          </div>
+          {!people.length && <p>No Baraputra yet. Add them from the admin Baraputra page.</p>}
+        </div>
+      </section>
+      {open?.image && (
+        <div className="lightbox" onClick={() => setOpen(null)} role="dialog" aria-modal="true" aria-label={open.name}>
+          <button type="button" className="lightbox-close" onClick={() => setOpen(null)} aria-label="Close">×</button>
+          <figure className="lightbox-fig member-lightbox-fig" onClick={(e) => e.stopPropagation()}>
+            <img src={open.image} alt={open.name} />
+            <figcaption>
+              {open.name}
+              {open.designation ? ` · ${open.designation}` : ""}
+            </figcaption>
+          </figure>
+        </div>
+      )}
+    </>
+  );
+}
+
+export function Places() {
+  const { site } = useApp();
+  const places = [...(site?.places || [])].sort((a, b) => (Number(a.order) || 0) - (Number(b.order) || 0));
+  return (
+    <>
+      <section className="page-banner">
+        <div className="wrap">
+          <p className="crumb"><Link to="/">Home</Link> &gt; Places</p>
+          <h1>Iconic Places of Banki</h1>
+          <p>Discover the landmarks and natural sites that define Banki</p>
+        </div>
+      </section>
+      <div className="fest-band">
+        <div className="wrap fest-wrap">
+          <h2>Places to visit</h2>
+          {places.map((place) => (
+            <article className="fest-card" key={place.id}>
+              <img src={place.image || "/temple.svg"} alt={place.title} />
+              <div className="fest-body">
+                <h3>{place.title}</h3>
+                <p>{plainText(place.excerpt || place.body)}</p>
+                {place.location && (
+                  <div className="fest-meta">
+                    <span>📍 {place.location}</span>
+                  </div>
+                )}
+                <Link className="btn-donate" to={`/places/${place.slug}`}>Learn More →</Link>
+              </div>
+            </article>
+          ))}
+          {!places.length && <p>No places yet. Add them from the admin Places page.</p>}
+        </div>
+      </div>
+    </>
+  );
+}
+
+export function PlaceDetail() {
+  const { slug } = useParams();
+  const { site } = useApp();
+  const [item, setItem] = useState(null);
+  const [err, setErr] = useState("");
+  useEffect(() => {
+    const local = (site?.places || []).find((p) => p.slug === slug);
+    if (local) setItem(local);
+    api(`/api/places/${slug}`).then(setItem).catch((e) => {
+      if (!local) setErr(e.message);
+    });
+  }, [slug, site]);
+  if (err) return <PageHero title="Place">{err}</PageHero>;
+  if (!item) return <PageHero title="Place">Loading...</PageHero>;
+  return (
+    <div className="fest-detail-page">
+      <div className="wrap fest-overview">
+        <div>
+          <h1>{item.title}</h1>
+          <RichText html={item.body || item.excerpt || ""} />
+        </div>
+        <div>
+          <img className="fest-hero-img" src={item.image || "/temple.svg"} alt={item.title} />
+          <div className="quick">
+            <h3>Quick information</h3>
+            <div className="quick-grid">
+              <div><strong>Location</strong><p>{item.location || site?.settings?.address || "Banki, Odisha"}</p></div>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -727,13 +866,30 @@ export function Contact() {
   );
 }
 
+function galleryYear(g) {
+  const n = Number(g?.year);
+  return Number.isFinite(n) && n >= 1900 ? n : null;
+}
+
 export function Gallery() {
   const { site } = useApp();
   const [cat, setCat] = useState("All");
+  const [year, setYear] = useState("All");
   const [open, setOpen] = useState(null);
   const items = site?.gallery || [];
   const cats = ["All", "Temple", "Festivals", "Deities", "Events"];
-  const shown = items.filter((g) => cat === "All" || g.category === cat);
+  const years = [...new Set(items.map(galleryYear).filter(Boolean))].sort((a, b) => b - a);
+  const shown = items.filter((g) => {
+    if (cat !== "All" && g.category !== cat) return false;
+    if (year !== "All" && galleryYear(g) !== year) return false;
+    return true;
+  });
+  const groups = year === "All"
+    ? [
+        ...years.map((y) => ({ key: String(y), label: String(y), items: shown.filter((g) => galleryYear(g) === y) })),
+        { key: "other", label: "", items: shown.filter((g) => !galleryYear(g)) },
+      ].filter((group) => group.items.length)
+    : [{ key: String(year), label: "", items: shown }];
   const idx = open ? shown.findIndex((g) => g.id === open.id) : -1;
 
   useEffect(() => {
@@ -766,22 +922,36 @@ export function Gallery() {
       <div className="gallery-band">
       <div className="wrap">
         <div className="filters">
-          {cats.map((c) => (
-            <button key={c} className={`chip ${cat === c ? "active" : ""}`} onClick={() => setCat(c)}>{c}</button>
-          ))}
+          {years.length > 0 && (
+            <div className="filter-row">
+              {["All", ...years].map((y) => (
+                <button key={y} className={`chip ${year === y ? "active" : ""}`} onClick={() => setYear(y)}>{y === "All" ? "All years" : y}</button>
+              ))}
+            </div>
+          )}
+          <div className="filter-row">
+            {cats.map((c) => (
+              <button key={c} className={`chip ${cat === c ? "active" : ""}`} onClick={() => setCat(c)}>{c}</button>
+            ))}
+          </div>
         </div>
-        <div className="photo-grid">
-          {shown.map((g) => (
-            <figure key={g.id}>
-              <button type="button" className="photo-btn" onClick={() => setOpen(g)}>
-                <img src={g.image} alt={g.title} />
-              </button>
-            </figure>
-          ))}
-        </div>
+        {groups.map((group) => (
+          <div className="gallery-year-block" key={group.key}>
+            {group.label ? <h2 className="gallery-year-title">{group.label}</h2> : null}
+            <div className="photo-grid">
+              {group.items.map((g) => (
+                <figure key={g.id}>
+                  <button type="button" className="photo-btn" onClick={() => setOpen(g)}>
+                    <img src={g.image} alt={g.title} />
+                  </button>
+                </figure>
+              ))}
+            </div>
+          </div>
+        ))}
         {!shown.length && (
           <p style={{ textAlign: "center", paddingBottom: 48 }}>
-            {items.length ? "No photographs in this category yet." : "No photographs yet. Add them from the admin Gallery page."}
+            {items.length ? "No photographs in this year or category yet." : "No photographs yet. Add them from the admin Gallery page."}
           </p>
         )}
       </div>
@@ -793,7 +963,7 @@ export function Gallery() {
           {idx >= 0 && idx < shown.length - 1 && <button type="button" className="lightbox-nav next" onClick={showNext} aria-label="Next">›</button>}
           <figure className="lightbox-fig" onClick={(e) => e.stopPropagation()}>
             <img src={open.image} alt={open.title} />
-            <figcaption>{open.title}{open.category ? ` · ${open.category}` : ""}</figcaption>
+            <figcaption>{open.title}{[open.category, galleryYear(open)].filter(Boolean).map(String).join(" · ")}</figcaption>
           </figure>
         </div>
       )}

@@ -129,10 +129,11 @@ export function Dashboard() {
       adminApi("/api/admin/books"),
       adminApi("/api/admin/gallery"),
       adminApi("/api/admin/members"),
+      adminApi("/api/admin/places"),
       adminApi("/api/admin/messages"),
-    ]).then(([stats, events, books, gallery, members, messages]) => {
-      setData({ stats, events, books, gallery, members, messages });
-    }).catch(() => setData({ stats: { events: 0, books: 0, gallery: 0, members: 0, messages: 0 }, events: [], books: [], gallery: [], members: [], messages: [] }));
+    ]).then(([stats, events, books, gallery, members, places, messages]) => {
+      setData({ stats, events, books, gallery, members, places, messages });
+    }).catch(() => setData({ stats: { events: 0, books: 0, gallery: 0, members: 0, places: 0, messages: 0 }, events: [], books: [], gallery: [], members: [], places: [], messages: [] }));
   }, []);
   if (!data) return <p>Loading…</p>;
 
@@ -143,19 +144,22 @@ export function Dashboard() {
     { key: "Events", value: data.stats.events, sub: `${published(data.events)} published on the site`, to: "/events", icon: "events", tone: "saffron" },
     { key: "Books", value: data.stats.books, sub: `${published(data.books)} available to download`, to: "/books", icon: "books", tone: "teal" },
     { key: "Gallery", value: data.stats.gallery, sub: `${published(data.gallery)} photos visible publicly`, to: "/gallery", icon: "gallery", tone: "gold" },
-    { key: "Members", value: data.stats.members, sub: `${published(data.members)} shown on the home page`, to: "/members", icon: "members", tone: "maroon" },
+    { key: "Baraputra", value: data.stats.members, sub: `${published(data.members)} shown as Baraputra of Banki`, to: "/baraputra", icon: "members", tone: "maroon" },
+    { key: "Places", value: data.stats.places, sub: `${published(data.places)} shown as Iconic Places`, to: "/places", icon: "places", tone: "gold" },
   ];
   const health = [
     { label: "Events", live: published(data.events), total: data.events.length, tone: "saffron" },
     { label: "Books", live: published(data.books), total: data.books.length, tone: "teal" },
     { label: "Gallery", live: published(data.gallery), total: data.gallery.length, tone: "gold" },
-    { label: "Members", live: published(data.members), total: data.members.length, tone: "maroon" },
+    { label: "Baraputra", live: published(data.members), total: data.members.length, tone: "maroon" },
+    { label: "Places", live: published(data.places), total: data.places.length, tone: "gold" },
   ];
   const actions = [
     { to: "/events", label: "Manage events", icon: "events" },
     { to: "/books", label: "Manage books", icon: "books" },
     { to: "/gallery", label: "Update gallery", icon: "gallery" },
-    { to: "/members", label: "Manage members", icon: "members" },
+    { to: "/baraputra", label: "Manage Baraputra", icon: "members" },
+    { to: "/places", label: "Manage places", icon: "places" },
     { to: "/messages", label: "Open inbox", icon: "messages" },
     { to: "/settings", label: "Site settings", icon: "settings" },
     { to: "/footer", label: "Edit footer", icon: "footer" },
@@ -384,6 +388,8 @@ const FOOTER_PAGES = [
   { label: "Home", path: "/" },
   { label: "About", path: "/about" },
   { label: "Events", path: "/events" },
+  { label: "Places", path: "/places" },
+  { label: "Baraputra", path: "/baraputra" },
   { label: "Books", path: "/books" },
   { label: "Gallery", path: "/gallery" },
   { label: "Contact", path: "/contact" },
@@ -790,6 +796,8 @@ function Crud({ col, fields, title, selects = {}, defaults = {}, hint, showPrima
                       />
                     ) : f === "order" ? (
                       <input type="number" min="1" value={edit[f] ?? ""} onChange={(e) => setEdit({ ...edit, order: e.target.value === "" ? "" : Number(e.target.value) })} />
+                    ) : f === "year" ? (
+                      <input type="number" min="1900" max="2100" value={edit[f] ?? ""} onChange={(e) => setEdit({ ...edit, year: e.target.value === "" ? "" : Number(e.target.value) })} />
                     ) : selects[f] ? (
                       <select value={edit[f] || selects[f][0]} onChange={(e) => setEdit({ ...edit, [f]: e.target.value })}>
                         {selects[f].map((opt) => <option key={opt} value={opt}>{opt}</option>)}
@@ -860,10 +868,11 @@ export function GalleryPage() {
     <Crud
       col="gallery"
       title="Gallery"
-      fields={["order", "title", "category", "image", "active"]}
+      fields={["order", "title", "category", "year", "image", "active"]}
       selects={{ category: ["Temple", "Festivals", "Deities", "Events"] }}
-      defaults={{ title: "", category: "Temple", image: "", order: 0, active: true }}
-      hint="Inactive photos stay in admin but are hidden on the public Gallery page."
+      defaults={{ title: "", category: "Temple", year: new Date().getFullYear(), image: "", order: 0, active: true }}
+      hint="Set the year for each photo. The public Gallery page filters by year and category. Inactive photos stay in admin but are hidden on the site."
+      listFields={["order", "title", "category", "year", "image"]}
     />
   );
 }
@@ -872,10 +881,24 @@ export function MembersPage() {
   return (
     <Crud
       col="members"
-      title="Members"
+      title="Baraputra of Banki"
       fields={["order", "name", "designation", "image", "active"]}
       defaults={{ order: "", name: "", designation: "", image: "", active: true }}
-      hint="These names and designations appear in Our Members on the public home page. Inactive members stay in admin but are hidden on the site."
+      hint="These people appear as Baraputra of Banki on the public home page and /baraputra. Lower order no appears first. Inactive entries stay in admin but are hidden on the site."
+    />
+  );
+}
+
+export function PlacesPage() {
+  return (
+    <Crud
+      col="places"
+      title="Iconic Places"
+      fields={["order", "title", "slug", "image", "excerpt", "location", "body", "active"]}
+      defaults={{ order: "", title: "", slug: "", image: "", excerpt: "", location: "Banki, Odisha", body: "", active: true }}
+      hint="These places appear on the home page and on the public Places page. Lower order no appears first. Inactive places stay in admin but are hidden on the site."
+      listFields={["order", "title", "location", "image"]}
+      viewPath={(r) => `/places/${r.slug || ""}`}
     />
   );
 }
@@ -1004,6 +1027,7 @@ function SideIcon({ name }) {
     books: "M5 4h11a2 2 0 0 1 2 2v14H7a2 2 0 0 0-2 2V4zm0 0v16M16 8H9m7 4H9",
     gallery: "M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6zm3 10 3.5-4.5 2.5 3 1.5-2L18 16M9 9h.01",
     members: "M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0zM4 20a8 8 0 0 1 16 0",
+    places: "M12 21s7-5.4 7-11a7 7 0 1 0-14 0c0 5.6 7 11 7 11zm0-8.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5z",
     settings: "M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M2 14h4M10 8h4M18 16h4",
     messages: "M4 6h16v10H7l-3 3V6z",
     about: "M12 3a9 9 0 1 0 .01 0zM12 8h.01M11 12h2v6h-2",
@@ -1068,7 +1092,8 @@ export function AdminApp() {
             <MenuLink to="/events"><SideIcon name="events" />Events</MenuLink>
             <MenuLink to="/books"><SideIcon name="books" />Books</MenuLink>
             <MenuLink to="/gallery"><SideIcon name="gallery" />Gallery</MenuLink>
-            <MenuLink to="/members"><SideIcon name="members" />Members</MenuLink>
+            <MenuLink to="/baraputra"><SideIcon name="members" />Baraputra</MenuLink>
+            <MenuLink to="/places"><SideIcon name="places" />Places</MenuLink>
             <p className="side-label">Manage</p>
             <MenuLink to="/about"><SideIcon name="about" />About</MenuLink>
             <MenuLink to="/footer"><SideIcon name="footer" />Footer</MenuLink>
