@@ -234,7 +234,10 @@ app.post("/api/admin/:col", auth("admin"), wrap(async (req, res) => {
   const col = req.params.col;
   if (!collections.includes(col)) return res.status(404).json({ error: "Unknown collection" });
   const item = { ...req.body, id: db.uuid() };
-  if (!item.slug && item.title) item.slug = slugify(item.title);
+  if (["events", "books", "places"].includes(col) && !item.slug && item.title) item.slug = slugify(item.title);
+  if (col === "gallery" || col === "members") {
+    delete item.slug;
+  }
   if (col === "messages" && !item.createdAt) item.createdAt = db.now();
   if ((col === "events" || col === "gallery" || col === "books" || col === "members" || col === "places") && (item.order == null || item.order === "")) {
     const table = col === "gallery" ? "gallery" : col === "books" ? "books" : col === "members" ? "members" : col === "places" ? "places" : "events";

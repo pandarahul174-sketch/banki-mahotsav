@@ -334,6 +334,23 @@ const MAPS = {
   }),
 };
 
+function allowedCols(table) {
+  const map = MAPS[table];
+  if (!map) return null;
+  return new Set(Object.keys(toCols(map({}))));
+}
+
+function pickTableCols(table, obj) {
+  const cols = toCols(obj);
+  const allowed = allowedCols(table);
+  if (!allowed) return cols;
+  const out = {};
+  for (const [k, v] of Object.entries(cols)) {
+    if (allowed.has(k)) out[k] = v;
+  }
+  return out;
+}
+
 function toCols(obj) {
   const out = {};
   const map = {
@@ -822,7 +839,7 @@ function seedPayload() {
 }
 
 async function insertRow(table, obj) {
-  const cols = toCols(obj);
+  const cols = pickTableCols(table, obj);
   if (obj.id) cols.id = obj.id;
   const keys = Object.keys(cols);
   const sql = `INSERT INTO \`${table}\` (${keys.map((k) => `\`${k}\``).join(",")}) VALUES (${keys.map(() => "?").join(",")})`;
@@ -852,7 +869,7 @@ async function findBy(table, col, value) {
 }
 
 async function updateRow(table, id, obj) {
-  const cols = toCols(obj);
+  const cols = pickTableCols(table, obj);
   const keys = Object.keys(cols);
   if (!keys.length) return findBy(table, "id", id);
   await query(

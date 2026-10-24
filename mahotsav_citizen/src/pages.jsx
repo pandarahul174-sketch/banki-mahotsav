@@ -186,7 +186,7 @@ export function Home() {
 
   if (!site) return <div className="wrap page">Loading...</div>;
   const s = site.settings || {};
-  const hero = "/hero.jpg?v=20261003";
+  const hero = s.heroImage || "/hero.jpg";
   const hours = s.aboutDarshan || "6:00 AM – 9:00 PM";
 
   return (
